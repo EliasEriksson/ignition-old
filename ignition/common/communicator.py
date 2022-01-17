@@ -1,7 +1,7 @@
 from typing import *
 import socket
 import asyncio
-import protocol
+from . import protocol
 import json
 
 
@@ -15,13 +15,20 @@ class Communicator:
         self.loop = loop if loop else asyncio.get_event_loop()
 
     async def recv_int(self, connection: socket.socket) -> int:
-        return int.from_bytes((await self.loop.sock_recv(connection, self.default_int_size)), "big", signed=False)
+        print("waiting to receive int...")
+        integer = int.from_bytes((await self.loop.sock_recv(connection, self.default_int_size)), "big", signed=False)
+        print(f"received int: {integer}")
+        return integer
 
     async def send_int(self, connection: socket.socket, integer: int) -> None:
+        print(f"sending int: {integer}")
         await self.loop.sock_sendall(connection, integer.to_bytes(self.default_int_size, "big", signed=False))
 
     async def recv_status(self, connection: socket.socket) -> protocol.Status:
-        return protocol.Status(self.recv_int(connection))
+        print("waiting to receive status...")
+        status = protocol.Status(self.recv_int(connection))
+        print(f"received status: {status}")
+        return status
 
     async def send_status(self, connection: socket.socket, status: protocol.Status) -> None:
         await self.send_int(connection, status.value)
