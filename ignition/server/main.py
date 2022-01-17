@@ -50,6 +50,7 @@ class Server:
             await self.communicator.send_status(connection, protocol.Status.not_implemented)
 
     async def run(self) -> None:
+        print("server running...")
         try:
             while True:
                 connection, _ = await self.loop.sock_accept(self.sock)
