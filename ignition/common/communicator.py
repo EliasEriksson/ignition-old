@@ -3,6 +3,10 @@ import socket
 import asyncio
 from . import protocol
 import json
+from ..logger import get_logger
+import logging
+
+get_logger(__name__, logging.INFO)
 
 
 class Communicator:
@@ -35,7 +39,7 @@ class Communicator:
         await self.send_int(connection, status.value)
 
     async def recv_data(self, connection: socket.socket) -> bytes:
-        print("waiting to receive data...")
+        print("waiting to receive data size...")
         size = await self.recv_int(connection)
         print(f"data size is expected to be {size} bytes.")
         blob = b""
