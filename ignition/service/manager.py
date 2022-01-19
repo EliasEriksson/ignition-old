@@ -1,7 +1,9 @@
 from typing import *
-from ..common.protocol import Request
+# from ..common.protocol import Request
+from ..common import protocol
 import asyncio
 import docker
+from docker import errors as docker_errors
 if TYPE_CHECKING:
     from docker.models.containers import Container
 
@@ -12,8 +14,6 @@ class Manager:
 
     unused_ports: Set[int]
     used_ports: Set[int]
-    queue: List[Tuple[asyncio.Future, Callable[[Tuple[str, int]], Awaitable[str]]]]
-    pending: Set[asyncio.Task]
 
     def __init__(self, port_range: str, loop: Optional[asyncio.AbstractEventLoop] = None) -> None:
         self.docker_client = docker.from_env()
@@ -22,29 +22,9 @@ class Manager:
         start_port, end_port = port_range.split(":")
         self.unused_ports = set(port for port in range(int(start_port), int(end_port) + 1))
         self.used_ports = set()
-        self.queue = []
-        self.pending = set()
+
 
         self.test()
-
-    async def start_container(self) -> Tuple[Container, int]:
-        port = await self.get_port()
-        container = self.docker_client.containers.run(
-            "ignition", detach=True, auto_remove=True,
-        )
-        return container, port
-
-    async def process(self, process: Callable[[], ]):
-        container, port = self.start_container()
-        container.kill()
-
-    async def test(self):
-        print("starting")
-        container, port = await self.start_container()
-
-        print(container.name, container.image)
-        print("ended")
-        container.kill()
 
     async def get_port(self) -> int:
         while True:
@@ -57,7 +37,25 @@ class Manager:
         if port in self.used_ports:
             self.unused_ports.add(self.unused_ports.pop())
 
-    async def process_queue(self) -> None:
-        while True:
-            if self.unused_ports and self.queue:
-                port = await self.get_port()
+    async def start_container(self) -> Tuple[Container, int]:
+        port = await self.get_port()
+        container = self.docker_client.containers.run(
+            "ignition", detach=True, auto_remove=True,
+        )
+        return container, port
+
+    async def process(self, process: Callable[[Tuple[str, int]], Coroutine[Any, Any, Tuple[protocol.Status, protocol.Response]]]):
+        container, port = self.start_container()
+        status, response = await process(("localhost", port))
+        try:
+            container.kill()
+        except docker_errors.NotFound:
+            pass
+        print(status, response)
+
+    async def test(self):
+        print("starting")
+        container, port = await self.start_container()
+        print(container.name, container.image)
+        print("ended")
+        container.kill()

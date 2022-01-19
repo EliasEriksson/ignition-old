@@ -23,14 +23,14 @@ def run_server():
 
 def run_service():
     loop = asyncio.get_event_loop()
-    service = ignition.Service(loop)
-    loop.run_until_complete(service.manager.test())
+    service = ignition.Service({6090: 6090}, loop)
     print("was here")
-    # loop.run_until_complete(service.run({
-    #     "language": "python",
-    #     "code": "print('hello world!')",
-    #     "args": ""
-    # }))
+    status, res = loop.run_until_complete(service.process({
+        "language": "python",
+        "code": "print('hello world!')",
+        "args": ""
+    }))
+    print(status, res)
     # loop.run_forever()
 
 

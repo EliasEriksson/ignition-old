@@ -9,6 +9,7 @@ from pathlib import Path
 import tempfile
 from uuid import uuid4
 from ..logger import get_logger
+import sys
 
 
 logger = get_logger(__name__, logging.INFO, stdout=True)
@@ -27,12 +28,15 @@ class Server:
     loop: asyncio.AbstractEventLoop
     communicator: Communicator
     sock: socket.socket
+    connected: bool
+    lifetime = 60
     timeout = 30
 
     def __init__(self, loop: Optional[asyncio.AbstractEventLoop] = None):
         self.loop = loop if loop else asyncio.get_event_loop()
         self.communicator = Communicator(logger, self.loop)
         self.sock = setup_socket()
+        self.connected = False
 
     async def handle_connection(self, connection: socket.socket) -> None:
         request = await self.communicator.recv_request(connection)
@@ -54,19 +58,22 @@ class Server:
         else:
             await self.communicator.send_status(connection, protocol.Status.not_implemented)
 
+    async def stop(self):
+        await asyncio.sleep(self.lifetime)
+        print("lifetime reached. closing socket")
+        if not self.connected:
+            self.sock.close()
+            sys.exit()
+
     async def run(self) -> None:
-        print("server running...")
+        logger.info("server running...")
         try:
-            # while True:
-            #     connection, _ = await self.loop.sock_accept(self.sock)
-            #     asyncio.create_task(self.handle_connection(connection))
+            asyncio.create_task(self.stop())
+            print("waiting for conenctions")
             connection, _ = await self.loop.sock_accept(self.sock)
+            self.connected = True
             await self.handle_connection(connection)
-        except ConnectionError:
-            pass
-        except KeyboardInterrupt:
-            pass
         except Exception as e:
-            print(e)
+            logger.critical(e)
         finally:
             self.sock.close()

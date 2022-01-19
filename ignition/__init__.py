@@ -1,5 +1,5 @@
-from .server.main import Server
-from .service.main import Service
+from .server.server import Server
+from .service.service import Service
 from .logger import get_logger
 
 
