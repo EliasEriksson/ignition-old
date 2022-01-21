@@ -14,9 +14,7 @@ async def process(stdin: str):
 
 async def shell(commands: List[str]):
     while commands and len(commands) > 1:
-        print(f"running command {(command := commands.pop(0))}")
-        print("result:", await process(command))
-    print(f"final command {commands}")
+        await process(commands.pop(0))
     start = perf_counter_ns()
     stdout, stderr = await process(commands.pop(0))
     end = perf_counter_ns()

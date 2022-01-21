@@ -48,7 +48,6 @@ class Client:
                         self.timeout_duration
                     )
                     await self.communicator.send_status(connection, protocol.Status.success)
-                    print(f"THIS IS THE RESPONSE: {response}")
                     await self.communicator.send_response(connection, response)
 
                 except asyncio.TimeoutError:
