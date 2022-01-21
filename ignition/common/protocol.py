@@ -21,7 +21,6 @@ class Request(TypedDict):
 
 
 class Response(TypedDict):
-    status: int
     stdout: Optional[str]
     stderr: Optional[str]
     ns: float

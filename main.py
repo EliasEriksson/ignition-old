@@ -18,7 +18,8 @@ def process(stdin: str) -> str:
 def start_client():
     loop = asyncio.get_event_loop()
     print("----------------------------------------------")
-    ignition.Client(loop)
+    client = ignition.Client(loop)
+    loop.run_until_complete(client.run())
 
 
 def start_server():
@@ -29,13 +30,56 @@ def start_server():
 
 def test():
     loop = asyncio.get_event_loop()
-    service = ignition.Server(loop=loop)
-    status, request = loop.run_until_complete(service.test({
+    server = ignition.Server(loop=loop)
+    print("starting test")
+    status, response = loop.run_until_complete(server.schedule_process({
         "language": "python",
         "code": "print('hello world!')",
         "args": ""
     }))
-    print(status, request)
+    print(status, response)
+    status, response = loop.run_until_complete(server.schedule_process({
+        "language": "c",
+        "code": "\n".join(["#include <stdio.h>", 'int main(){printf("Hello World");return 0;}']),
+        "args": ""
+    }))
+    print(status, response)
+    status, response = loop.run_until_complete(server.schedule_process({
+        "language": "cpp",
+        "code": "\n".join(['#include <iostream>', 'int main() {std::cout << "Hello World"; return 0;}']),
+        "args": ""
+    }))
+    print(status, response)
+    status, response = loop.run_until_complete(server.schedule_process({
+        "language": "cs",
+        "code": 'class Hello {static void Main(string[] args){System.Console.WriteLine("Hello World!");}}',
+        "args": ""
+    }))
+    print(status, response)
+    status, response = loop.run_until_complete(server.schedule_process({
+        "language": "javascript",
+        "code": "console.log('hello world!')",
+        "args": ""
+    }))
+    print(status, response)
+    status, response = loop.run_until_complete(server.schedule_process({
+        "language": "php",
+        "code": "echo 'Hello world!'",
+        "args": ""
+    }))
+    print(status, response)
+    status, response = loop.run_until_complete(server.schedule_process({
+        "language": "java",
+        "code": 'class HelloWorld {public static void main(String[] args) {System.out.println("Hello, World!");}}',
+        "args": ""
+    }))
+    print(status, response)
+    status, response = loop.run_until_complete(server.schedule_process({
+        "language": "go",
+        "code": "\n".join(["package main", 'import "fmt"', 'func main() {', 'fmt.Println("Hello world!")', "}"]),
+        "args": ""
+    }))
+    print(status, response)
 
 
 def build_docker_image():

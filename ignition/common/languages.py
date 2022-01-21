@@ -6,15 +6,25 @@ from .protocol import Response
 from time import perf_counter_ns
 
 
-async def subprocess(stdin: str) -> asyncio.subprocess.Process:
-    return await asyncio.create_subprocess_exec(
+async def process(stdin: str):
+    return await (await asyncio.create_subprocess_exec(
         *stdin.split(), stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
-    )
+    )).communicate()
 
 
-def create_result(status: int, stdout: Optional[bytes], stderr: Optional[bytes], time: float) -> Response:
+async def shell(commands: List[str]):
+    while commands and len(commands) > 1:
+        print(f"running command {(command := commands.pop(0))}")
+        print("result:", await process(command))
+    print(f"final command {commands}")
+    start = perf_counter_ns()
+    stdout, stderr = await process(commands.pop(0))
+    end = perf_counter_ns()
+    return create_result(stdout, stderr, end - start)
+
+
+def create_result(stdout: Optional[bytes], stderr: Optional[bytes], time: float) -> Response:
     return {
-        "status": status,
         "stdout": stdout.decode("utf-8") if stdout else None,
         "stderr": stderr.decode("utf-8") if stderr else None,
         "ns": time
@@ -39,85 +49,53 @@ class LanguageMeta(type):
 
 class Languages(metaclass=LanguageMeta):
     @staticmethod
-    async def php(file: Path, sys_args: str) -> bytes:
-        process = await subprocess(f"php -f {file} {sys_args}")
-        stdout, stderr = await process.communicate()
-        return stdout if process.returncode == 0 else stderr
+    async def php(file: Path, sys_args: str) -> Response:
+        return await shell([
+            f"php -f {file} {sys_args}"
+        ])
 
     @staticmethod
-    async def java(file: Path, sys_args: str) -> bytes:
-        process = await subprocess(f"java {file} {sys_args}")
-        stdout, stderr = await process.communicate()
-        return stdout if process.returncode == 0 else stderr
+    async def java(file: Path, sys_args: str) -> Response:
+        return await shell([
+            f"java {file} {sys_args}"
+        ])
 
     @staticmethod
-    async def javascript(file: Path, sys_args: str) -> bytes:
-        process = await subprocess(f"node {file} {sys_args}")
-        stdout, stderr = await process.communicate()
-        return stdout if process.returncode == 0 else stderr
+    async def javascript(file: Path, sys_args: str) -> Response:
+        return await shell([
+            f"node {file} {sys_args}"
+        ])
 
     @staticmethod
-    async def go(file: Path, sys_args: str) -> bytes:
-        process = await subprocess(f"go run {file} {sys_args}")
-        stdout, stderr = await process.communicate()
-        return stdout if process.returncode == 0 else stderr
+    async def go(file: Path, sys_args: str) -> Response:
+        return await shell([
+            f"go run {file} {sys_args}"
+        ])
 
     @staticmethod
-    async def cpp(file: Path, sys_args: str) -> bytes:
-        executable = file.parent.joinpath(str(uuid4()))
-        process = await subprocess(f"g++ -o {executable} {file} {sys_args}")
-        _, stderr = await process.communicate()
-        if not process.returncode == 0:
-            return stderr
-
-        process = await subprocess(f"{executable}")
-        stdout, stderr = await process.communicate()
-        return stdout if process.returncode == 0 else stderr
+    async def cpp(file: Path, sys_args: str) -> Response:
+        return await shell([
+            f"g++ -o {(executable := file.parent.joinpath(str(uuid4())))} {file}",
+            f"{executable} {sys_args}"
+        ])
 
     @staticmethod
-    async def cs(file: Path, sys_args: str) -> bytes:
-        cs_project = file.parent.joinpath("cs")
-
-        process = await subprocess(f"dotnet new console --output {cs_project}")
-        _, stderr = await process.communicate()
-        if not process.returncode == 0:
-            return stderr
-
-        process = await subprocess(f"mv {file} {cs_project.joinpath(file.name)}")
-        _, stderr = await process.communicate()
-        if not process.returncode == 0:
-            return stderr
-
-        process = await subprocess(f"rm {cs_project.joinpath('Program.cs')}")
-        _, stderr = await process.communicate()
-        if not process.returncode == 0:
-            return stderr
-
-        process = await subprocess(f"dotnet run --project {cs_project} {sys_args}")
-        stdout, stderr = await process.communicate()
-        return stdout if process.returncode == 0 else stderr
+    async def cs(file: Path, sys_args: str) -> Response:
+        return await shell([
+            f"dotnet new console --output {(project := file.parent.joinpath('cs'))}",
+            f"mv {file} {project.joinpath('Program.cs')}",  # overwrite the generated file with the real file
+            f"dotnet run --project {project} {sys_args}"
+        ])
 
     @staticmethod
     async def python(file: Path, sys_args: str) -> Response:
-        start = perf_counter_ns()
-        process = await subprocess(f"python3 {file} {sys_args}")
-        end = perf_counter_ns()
-        return create_result(
-            process.returncode,
-            *await process.communicate(),
-            time=end - start
-        )
+        return await shell([
+            f"python3 {file} {sys_args}"
+        ])
 
     @staticmethod
-    async def c(file: Path, sys_args: str) -> bytes:
-        executable = file.parent.joinpath(str(uuid4()))
-        process = await subprocess(f"gcc -o {executable} {file} {sys_args}")
-        _, stderr = await process.communicate()
-        if not process.returncode == 0:
-            return stderr
-
-        process = await subprocess(f"{executable}")
-        stdout, stderr = await process.communicate()
-        if not process.returncode == 0:
-            return stderr
-        return stdout
+    async def c(file: Path, sys_args: str) -> Response:
+        return await shell([
+            f"gcc -o {(executable := file.parent.joinpath(str(uuid4())))} {file}",
+            f"{executable} {sys_args}"
+        ])

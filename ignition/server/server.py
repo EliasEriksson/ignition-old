@@ -57,13 +57,13 @@ class Server:
         while True:
             if uid in self.results:
                 return self.results.pop(uid)
-            await asyncio.sleep(0)
+            await asyncio.sleep(0.01)
 
     async def get_container_client(self, container: Container) -> socket.socket:
         while True:
             if self.container_clients[container.id]:
                 return self.container_clients.pop(container.id)
-            await asyncio.sleep(0)
+            await asyncio.sleep(0.01)
 
     async def start_container(self) -> Container:
         container = self.docker_client.containers.run(
@@ -83,7 +83,6 @@ class Server:
         await self.communicator.send_request(connection, request)
         status = await self.communicator.recv_status(connection)
         logger.info(status)
-
         if status == protocol.Status.success:
             response = await self.communicator.recv_response(connection)
             self.results[uid] = (status, response)
@@ -100,14 +99,11 @@ class Server:
 
     async def _queue_processor(self):
         while True:
-            while len(self.queue) < self.queue_size:
-                try:
-                    uid, request = self.queue_overflow.popitem(last=False)
-                    self.queue.add(uid)
-                    asyncio.create_task(self.process(uid, request))
-                except KeyError:
-                    break
-            await asyncio.sleep(0)
+            while self.queue_overflow and len(self.queue) < self.queue_size:
+                uid, request = self.queue_overflow.popitem(last=False)
+                self.queue.add(uid)
+                asyncio.create_task(self.process(uid, request))
+            await asyncio.sleep(0.01)
 
     async def _run(self):
         try:
@@ -120,7 +116,4 @@ class Server:
         except ConnectionError as e:
             print(e)
 
-    async def test(self, request: protocol.Request):
-        asyncio.create_task(self._run())
-        await asyncio.sleep(0.5)
-        return await self.schedule_process(request)
+
