@@ -1,15 +1,15 @@
-import logging
 from typing import *
 from ..common.communicator import Communicator
-from ..common import protocol
-from ..common.languages import Languages
 import socket
+from ..common import protocol
 import asyncio
-from pathlib import Path
-import tempfile
-from uuid import uuid4
+import logging
 from ..logger import get_logger
-import sys
+import docker
+from collections import OrderedDict
+from docker import errors as docker_errors
+if TYPE_CHECKING:
+    from docker.models.containers import Container
 
 
 logger = get_logger(__name__, logging.INFO, stdout=True)
@@ -25,55 +25,59 @@ def setup_socket() -> socket.socket:
 
 
 class Server:
-    loop: asyncio.AbstractEventLoop
     communicator: Communicator
+    loop: asyncio.AbstractEventLoop
+    docker_client: docker.DockerClient
     sock: socket.socket
-    connected: bool
-    lifetime = 60
-    timeout = 30
+    container_clients: "OrderedDict[str, Optional[socket.socket]]"
 
     def __init__(self, loop: Optional[asyncio.AbstractEventLoop] = None):
+        self.docker_client = docker.from_env()
         self.loop = loop if loop else asyncio.get_event_loop()
         self.communicator = Communicator(logger, self.loop)
         self.sock = setup_socket()
-        self.connected = False
+        self.container_clients = OrderedDict()
 
-    async def handle_connection(self, connection: socket.socket) -> None:
-        request = await self.communicator.recv_request(connection)
-        if (language := request["language"]) in Languages:
-            with tempfile.TemporaryDirectory() as tempdir:
-                script_path = Path(tempdir).joinpath(f"{str(uuid4())}.{language}")
-                with open(script_path, "w") as script:
-                    script.write(request["code"])
-                try:
-                    response: protocol.Response = await asyncio.wait_for(
-                        Languages[language](script_path, request["args"]),
-                        self.timeout
-                    )
-                    await self.communicator.send_status(connection, protocol.Status.success)
-                    await self.communicator.send_response(connection, response)
+    async def get_container_client(self, container: Container) -> socket.socket:
+        while True:
+            if self.container_clients[container.id]:
+                return self.container_clients.pop(container.id)
+            await asyncio.sleep(0)
 
-                except asyncio.TimeoutError:
-                    await self.communicator.send_status(connection, protocol.Status.timeout)
-        else:
-            await self.communicator.send_status(connection, protocol.Status.not_implemented)
+    async def start_container(self) -> Container:
+        container = self.docker_client.containers.run(
+            "ignition", detach=True, auto_remove=True, extra_hosts={"host.docker.internal": "host-gateway"}
+        )
+        self.container_clients[container.id] = None
+        return container
 
-    async def stop(self):
-        await asyncio.sleep(self.lifetime)
-        print("lifetime reached. closing socket")
-        if not self.connected:
-            self.sock.close()
-            sys.exit()
+    async def process(self, request: protocol.Request) -> [protocol.Status, Optional[protocol.Response]]:
+        container = await self.start_container()
+        connection = await self.get_container_client(container)
 
-    async def run(self) -> None:
-        logger.info("server running...")
+        await self.communicator.send_request(connection, request)
+        status = await self.communicator.recv_status(connection)
+        logger.info(status)
+        if status == protocol.Status.success:
+            response = await self.communicator.recv_response(connection)
+            return status, response
+        return status, None
+
+    async def run(self):
         try:
-            asyncio.create_task(self.stop())
-            print("waiting for conenctions")
-            connection, _ = await self.loop.sock_accept(self.sock)
-            self.connected = True
-            await self.handle_connection(connection)
-        except Exception as e:
-            logger.critical(e)
-        finally:
-            self.sock.close()
+            while True:
+                print("awaiting connection")
+                connection, _ = await self.loop.sock_accept(self.sock)
+                print("a container connected")
+                for container_id, client in self.container_clients.items():
+                    if not self.container_clients[container_id]:
+                        self.container_clients[container_id] = connection
+                        break
+        except ConnectionError as e:
+            print(e)
+
+    async def test(self, request: protocol.Request):
+        asyncio.create_task(self.run())
+        await asyncio.sleep(0.5)
+        return await self.process(request)
+

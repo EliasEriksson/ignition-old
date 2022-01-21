@@ -15,23 +15,28 @@ def process(stdin: str) -> str:
     )
 
 
-def run_server():
+def start_client():
     loop = asyncio.get_event_loop()
-    server = ignition.Server(loop)
+    print("----------------------------------------------")
+    server = ignition.Client(loop)
     loop.run_until_complete(server.run())
 
 
-def run_service():
+def start_server():
     loop = asyncio.get_event_loop()
-    service = ignition.Service({6090: 6090}, loop)
-    print("was here")
-    status, res = loop.run_until_complete(service.process({
+    service = ignition.Server(loop)
+    loop.run_until_complete(service.run())
+
+
+def test():
+    loop = asyncio.get_event_loop()
+    service = ignition.Server(loop)
+    status, request = loop.run_until_complete(service.test({
         "language": "python",
         "code": "print('hello world!')",
         "args": ""
     }))
-    print(status, res)
-    # loop.run_forever()
+    print(status, request)
 
 
 def build_docker_image():
@@ -42,12 +47,13 @@ if __name__ == '__main__':
     os.chdir(Path(__file__).parent)
     parser = argparse.ArgumentParser()
     modes = {
-        "service": run_service,
-        "server": run_server,
+        "server": start_server,
+        "client": start_client,
+        "test": test,
         "build-docker-image": build_docker_image
     }
     mode_help = ", ".join(f"'{mode}'" for mode in modes.keys())
-    parser.add_argument("mode", type=str, nargs="?", default="service",
+    parser.add_argument("mode", type=str, nargs="?", default="server",
                         help=mode_help)
     parser.add_argument("-p", type=str, nargs="?", default="6090:6096",
                         help="port range (from:to) for the application. 1 port = 1 concurrent container.")

@@ -37,7 +37,7 @@ RUN rm cs/Program.cs
 # cleanup
 RUN rm -rf /var/lib/apt/lists/*
 
-# setup the server
+# setup the client
 WORKDIR /ignition
 COPY requirements.txt /ignition/requirements.txt
 RUN python -m pip install -r /ignition/requirements.txt
@@ -45,4 +45,4 @@ RUN python -m pip install -r /ignition/requirements.txt
 COPY ignition /ignition/ignition
 COPY main.py /ignition/main.py
 
-CMD ["python", "main.py", "server"]
+CMD ["python", "main.py", "client"]
