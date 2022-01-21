@@ -97,3 +97,9 @@ class Languages(metaclass=LanguageMeta):
             f"gcc -o {(executable := file.parent.joinpath(str(uuid4())))} {file}",
             f"{executable} {sys_args}"
         ])
+
+    @staticmethod
+    async def typescript(file: Path, args: str) -> Response:
+        return await shell([
+            f"deno run {file} {args}"
+        ])

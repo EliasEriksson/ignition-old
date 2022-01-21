@@ -67,7 +67,7 @@ class Server:
 
     async def start_container(self) -> Container:
         container = self.docker_client.containers.run(
-            "ignition", detach=True, auto_remove=True, extra_hosts={"host.docker.internal": "host-gateway"}
+            "ignition", detach=True, auto_remove=False, extra_hosts={"host.docker.internal": "host-gateway"}
         )
         self.container_clients[container.id] = None
         return container

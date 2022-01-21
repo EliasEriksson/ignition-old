@@ -34,6 +34,9 @@ RUN apt install -y dotnet-sdk-5.0
 RUN dotnet new console --output cs
 RUN rm cs/Program.cs
 
+RUN curl -fsSL https://deno.land/x/install/install.sh | sh
+ENV PATH="${PATH}:/root/.deno/bin/"
+
 # cleanup
 RUN rm -rf /var/lib/apt/lists/*
 
