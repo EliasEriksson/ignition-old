@@ -18,19 +18,18 @@ def process(stdin: str) -> str:
 def start_client():
     loop = asyncio.get_event_loop()
     print("----------------------------------------------")
-    server = ignition.Client(loop)
-    loop.run_until_complete(server.run())
+    ignition.Client(loop)
 
 
 def start_server():
     loop = asyncio.get_event_loop()
-    service = ignition.Server(loop)
-    loop.run_until_complete(service.run())
+    ignition.Server(loop=loop)
+    loop.run_forever()
 
 
 def test():
     loop = asyncio.get_event_loop()
-    service = ignition.Server(loop)
+    service = ignition.Server(loop=loop)
     status, request = loop.run_until_complete(service.test({
         "language": "python",
         "code": "print('hello world!')",
