@@ -1,9 +1,13 @@
 import argparse
+import logging
 import os
 from pathlib import Path
 import ignition
 import asyncio
 import subprocess
+
+
+logger = ignition.get_logger(__name__, logging.INFO)
 
 
 def process(stdin: str) -> str:
@@ -30,8 +34,8 @@ def start_server():
 
 def test():
     loop = asyncio.get_event_loop()
-    server = ignition.Server(loop=loop)
-    print("starting test")
+    server = ignition.Server(10, logger=logger, loop=loop)
+    logger.info("starting test")
     status, response = loop.run_until_complete(server.schedule_process({
         "language": "python",
         "code": "print('hello world!')",

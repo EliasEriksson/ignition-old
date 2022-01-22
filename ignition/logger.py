@@ -8,7 +8,7 @@ from logging.handlers import TimedRotatingFileHandler
 def get_logger(
         name: str, level: int,
         formatting: Optional[str] = None,
-        master_file: bool = False,
+        master_file: bool = True,
         stdout: bool = False
 ) -> logging.Logger:
     path = Path(__file__)
@@ -37,3 +37,6 @@ def get_logger(
         logger.addHandler(logging.StreamHandler(sys.stdout))
 
     return logger
+
+
+

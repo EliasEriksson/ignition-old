@@ -14,7 +14,7 @@ import uuid
 if TYPE_CHECKING:
     from docker.models.containers import Container
 
-logger = get_logger(__name__, logging.INFO, stdout=True)
+# logger = get_logger(__name__, logging.INFO, stdout=True)
 
 
 def setup_socket() -> socket.socket:
@@ -32,18 +32,20 @@ class Server:
     docker_client: docker.DockerClient
     sock: socket.socket
     container_clients: "OrderedDict[str, Optional[socket.socket]]"
+    logger: logging.Logger
 
     queue_size: int
     queue: Set[uuid.UUID]
     queue_overflow: "OrderedDict[uuid.UUID, protocol.Request]"
     results: Dict[uuid.UUID, Tuple[protocol.Status, Optional[protocol.Response]]]
 
-    def __init__(self, queue_size: int = 10, loop: Optional[asyncio.AbstractEventLoop] = None):
+    def __init__(self, queue_size: int = 10, logger: Optional[logging.Logger] = None, loop: Optional[asyncio.AbstractEventLoop] = None):
         self.docker_client = docker.from_env()
         self.loop = loop if loop else asyncio.get_event_loop()
         self.communicator = Communicator(logger, self.loop)
         self.sock = setup_socket()
         self.container_clients = OrderedDict()
+        self.logger = logger if logger else get_logger(__name__, logging.WARNING, stdout=True)
 
         self.queue_size = queue_size
         self.queue = set()
@@ -82,7 +84,7 @@ class Server:
 
         await self.communicator.send_request(connection, request)
         status = await self.communicator.recv_status(connection)
-        logger.info(status)
+        self.logger.info(status)
         if status == protocol.Status.success:
             response = await self.communicator.recv_response(connection)
             self.results[uid] = (status, response)
