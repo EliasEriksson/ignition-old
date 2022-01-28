@@ -75,7 +75,7 @@ class Server:
         self.lingering_processes.append(future)
         await future
         result = future.result()
-        self.logger.debug(f"connection from '{result[1][0]}:{result[1][1]}' received")
+        self.logger.debug(f"connection from '{result[1][0]}:{result[1][1]}' received.")
         return result
 
     async def process(self, uid: uuid.UUID, request: protocol.Request) -> None:
@@ -83,11 +83,11 @@ class Server:
         self.logger.debug(f"waiting for container to connect to process '{uid}'...")
         connection, (ip, port) = await self.get_connection()
         self.logger.debug(f"connection '{ip}:{port}' connected to process '{uid}'.")
-        self.logger.debug(f"sending request to container '{ip}:{port}'.")
+        self.logger.debug(f"sending request to connection '{ip}:{port}'.")
         await self.communicator.send_request(connection, request)
-        self.logger.debug(f"waiting for status from container '{ip}:{port}'...")
+        self.logger.debug(f"waiting for status from connection '{ip}:{port}'...")
         status = await self.communicator.recv_status(connection)
-        self.logger.debug(f"received status '{status}' from container '{ip}:{port}'.")
+        self.logger.debug(f"received status '{status}' from connection '{ip}:{port}'.")
 
         if status == protocol.Status.success:
             self.logger.debug(f"waiting for '{ip}:{port}' to send back a response object...")
@@ -106,8 +106,8 @@ class Server:
         connection.close()
 
         self.logger.info(
-            f"process '{uid}' ran in container '{ip}:{port}' "
-            f"and exited with status '{status}' and response '{response}'."
+            f"process '{uid}' ran in container from '{ip}:{port}' "
+            f"and exited with status '{status}'."
         )
 
     def advance_queue(self) -> None:
@@ -116,8 +116,10 @@ class Server:
             uid, request = self.overflow.popitem(last=False)
             self.queue.add(uid)
             asyncio.create_task(self.process(uid, request))
-        self.logger.debug(f"current queue: {len(self.queue)} / {self.queue_size}")
-        self.logger.debug(f"current overflow: {len(self.overflow)} / ∞)")
+        self.logger.info(
+            f"current queue: {len(self.queue)} / {self.queue_size} "
+            f"with overflow: {len(self.overflow)} / ∞"
+        )
 
     async def _run(self):
         try:

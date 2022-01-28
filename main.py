@@ -7,7 +7,7 @@ import asyncio
 import subprocess
 
 
-logger = ignition.get_logger(__name__, logging.INFO)
+logger = ignition.get_logger(__name__, logging.INFO, stdout=True)
 
 
 def process(stdin: str) -> str:

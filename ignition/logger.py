@@ -34,7 +34,11 @@ def get_logger(
     logger.addHandler(handler)
 
     if stdout:
-        logger.addHandler(logging.StreamHandler(sys.stdout))
+        stdout_handler = logging.StreamHandler(sys.stdout)
+        stdout_handler.setFormatter(logging.Formatter(
+            "%(levelname)s: %(message)s"
+        ))
+        logger.addHandler(stdout_handler)
 
     return logger
 
