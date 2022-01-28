@@ -34,7 +34,9 @@ class Server:
     results: Dict[uuid.UUID, "asyncio.Future[Tuple[protocol.Status, Optional[protocol.Response]]]"]
     lingering_processes: List["asyncio.Future[Tuple[socket.socket, Tuple[str, int]]]"]
 
-    def __init__(self, queue_size: int = 10, logger: Optional[logging.Logger] = None, loop: Optional[asyncio.AbstractEventLoop] = None):
+    def __init__(self, queue_size: int = 10,
+                 logger: Optional[logging.Logger] = None,
+                 loop: Optional[asyncio.AbstractEventLoop] = None) -> None:
         self.docker_client = docker.from_env()
         self.loop = loop if loop else asyncio.get_event_loop()
         self.communicator = Communicator(logger, self.loop)
@@ -68,6 +70,10 @@ class Server:
         future: asyncio.Future[Tuple[socket.socket, Tuple[str, int]]] = self.loop.create_future()
         self.logger.debug(f"waiting for a container to connect...")
         self.lingering_processes.append(future)
+        try:
+            pass
+        except asyncio.TimeoutError:
+            pass
         await future
         result = future.result()
         self.logger.debug(f"connection from '{result[1][0]}:{result[1][1]}' received.")
@@ -116,7 +122,7 @@ class Server:
             f"with overflow: {len(self.overflow)} / ∞"
         )
 
-    async def _run(self):
+    async def _run(self) -> None:
         try:
             while True:
                 connection, address = await self.loop.sock_accept(self.sock)

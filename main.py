@@ -167,7 +167,7 @@ if __name__ == '__main__':
     parser.add_argument("mode", type=str, nargs="?", default="server",
                         help=mode_help)
     parser.add_argument("-p", type=str, nargs="?", default="6090:6096",
-                        help="port range (from:to) for the application. 1 port = 1 concurrent container.")
+                        help="application port.")
     args = parser.parse_args()
     try:
         if args.mode in modes:
