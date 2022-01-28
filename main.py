@@ -42,6 +42,18 @@ def test():
         "args": ""
     }))
     print(status, response)
+
+
+def test_all():
+    loop = asyncio.get_event_loop()
+    server = ignition.Server(10, logger=logger, loop=loop)
+    logger.info("starting to test all")
+    status, response = loop.run_until_complete(server.schedule_process({
+        "language": "python",
+        "code": "print('hello world!')",
+        "args": ""
+    }))
+    print(status, response)
     status, response = loop.run_until_complete(server.schedule_process({
         "language": "c",
         "code": "\n".join(["#include <stdio.h>", 'int main(){printf("Hello World");return 0;}']),
@@ -97,6 +109,7 @@ if __name__ == '__main__':
         "server": start_server,
         "client": start_client,
         "test": test,
+        "test-all": test_all,
         "build-docker-image": build_docker_image
     }
     mode_help = ", ".join(f"'{mode}'" for mode in modes.keys())

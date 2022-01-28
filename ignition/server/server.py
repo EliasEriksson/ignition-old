@@ -31,20 +31,20 @@ class Server:
     loop: asyncio.AbstractEventLoop
     docker_client: docker.DockerClient
     sock: socket.socket
-    container_clients: "OrderedDict[str, Optional[socket.socket]]"
     logger: logging.Logger
 
     queue_size: int
     queue: Set[uuid.UUID]
     queue_overflow: "OrderedDict[uuid.UUID, protocol.Request]"
     results: Dict[uuid.UUID, Tuple[protocol.Status, Optional[protocol.Response]]]
+    __container_clients: List["asyncio.Future[socket.socket]"]
 
     def __init__(self, queue_size: int = 10, logger: Optional[logging.Logger] = None, loop: Optional[asyncio.AbstractEventLoop] = None):
         self.docker_client = docker.from_env()
         self.loop = loop if loop else asyncio.get_event_loop()
         self.communicator = Communicator(logger, self.loop)
         self.sock = setup_socket()
-        self.container_clients = OrderedDict()
+        self.__container_clients = []
         self.logger = logger if logger else get_logger(__name__, logging.WARNING, stdout=True)
 
         self.queue_size = queue_size
@@ -61,26 +61,22 @@ class Server:
                 return self.results.pop(uid)
             await asyncio.sleep(0.01)
 
-    async def get_container_client(self, container: Container) -> socket.socket:
-        while True:
-            if self.container_clients[container.id]:
-                return self.container_clients.pop(container.id)
-            await asyncio.sleep(0.01)
-
-    async def start_container(self) -> Container:
-        container = self.docker_client.containers.run(
-            "ignition", detach=True, auto_remove=False, extra_hosts={"host.docker.internal": "host-gateway"}
-        )
-        self.container_clients[container.id] = None
-        return container
-
     async def schedule_process(self, request: protocol.Request) -> Tuple[protocol.Status, Optional[protocol.Response]]:
         self.queue_overflow[(uid := uuid.uuid4())] = request
         return await self.get_response(uid)
 
+    async def get_container_and_connection(self) -> Tuple[Container, socket.socket]:
+        container = self.docker_client.containers.run(
+            "ignition", detach=True, auto_remove=False, extra_hosts={"host.docker.internal": "host-gateway"}
+        )
+
+        future: asyncio.Future[socket.socket] = self.loop.create_future()
+        self.__container_clients.append(future)
+        await future
+        return container, future.result()
+
     async def process(self, uid: uuid.UUID, request: protocol.Request) -> None:
-        container = await self.start_container()
-        connection = await self.get_container_client(container)
+        container, connection = await self.get_container_and_connection()
 
         await self.communicator.send_request(connection, request)
         status = await self.communicator.recv_status(connection)
@@ -111,11 +107,9 @@ class Server:
         try:
             while True:
                 connection, _ = await self.loop.sock_accept(self.sock)
-                for container_id, client in self.container_clients.items():
-                    if not self.container_clients[container_id]:
-                        self.container_clients[container_id] = connection
-                        break
+                if self.__container_clients:
+                    self.__container_clients.pop(0).set_result(connection)
+                else:
+                    connection.close()
         except ConnectionError as e:
             print(e)
-
-
