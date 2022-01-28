@@ -80,8 +80,7 @@ class Languages(metaclass=LanguageMeta):
     @staticmethod
     async def cs(file: Path, sys_args: str) -> Response:
         return await shell([
-            f"dotnet new console --output {(project := file.parent.joinpath('cs'))}",
-            f"mv {file} {project.joinpath('Program.cs')}",  # overwrite the generated file with the real file
+            f"mv {file} {(project := Path('/cs')).joinpath('Program.cs')}",  # move to prepared console project
             f"dotnet run --project {project} {sys_args}"
         ])
 

@@ -58,23 +58,23 @@ async def _test_async():
         "args": ""
     })), asyncio.create_task(server.process({
         "language": "cpp",
-        "code": "\n".join(['#include <iostream>', 'int main() {std::cout << "Hello World"; return 0;}']),
+        "code": "\n".join(['#include <iostream>', 'int main() {std::cout << "Hello world"; return 0;}']),
         "args": ""
     })), asyncio.create_task(server.process({
         "language": "cs",
-        "code": 'class Hello {static void Main(string[] args){System.Console.WriteLine("Hello World!");}}',
+        "code": 'class Hello {static void Main(string[] args){System.Console.WriteLine("Hello world!");}}',
         "args": ""
     })), asyncio.create_task(server.process({
         "language": "javascript",
-        "code": "console.log('hello world!')",
+        "code": "console.log('Hello world!')",
         "args": ""
     })), asyncio.create_task(server.process({
         "language": "php",
-        "code": "echo 'Hello world!'",
+        "code": "<?php echo 'Hello world!'; ?>",
         "args": ""
     })), asyncio.create_task(server.process({
         "language": "java",
-        "code": 'class HelloWorld {public static void main(String[] args) {System.out.println("Hello, World!");}}',
+        "code": 'class HelloWorld {public static void main(String[] args) {System.out.println("Hello world!");}}',
         "args": ""
     })), asyncio.create_task(server.process({
         "language": "go",
@@ -130,7 +130,7 @@ def test_all():
     print(status, response)
     status, response = loop.run_until_complete(server.process({
         "language": "php",
-        "code": "echo 'Hello world!'",
+        "code": "<?php echo 'Hello world!';?>",
         "args": ""
     }))
     print(status, response)
