@@ -20,5 +20,5 @@ class Request(BaseModel):
 
 @app.get(f"{root_url}/process/")
 async def process(request: Request):
-    status, response = await server.schedule_process(dict(request))
+    status, response = await server.process(dict(request))
     return {"status": status, "response": response}

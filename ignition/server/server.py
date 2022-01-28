@@ -11,11 +11,6 @@ import docker.errors
 from collections import OrderedDict
 import uuid
 
-if TYPE_CHECKING:
-    from docker.models.containers import Container
-
-# logger = get_logger(__name__, logging.INFO, stdout=True)
-
 
 def setup_socket() -> socket.socket:
     sock = socket.socket()
@@ -44,26 +39,26 @@ class Server:
         self.loop = loop if loop else asyncio.get_event_loop()
         self.communicator = Communicator(logger, self.loop)
         self.sock = setup_socket()
-        self.lingering_processes = []
         self.logger = logger if logger else get_logger(__name__, logging.WARNING, stdout=True)
 
         self.queue_size = queue_size
         self.queue = set()
         self.overflow = OrderedDict()
         self.results = {}
+        self.lingering_processes = []
 
         self.loop.create_task(self._run())
 
-    async def schedule_process(self, request: protocol.Request) -> Tuple[protocol.Status, Optional[protocol.Response]]:
+    async def process(self, request: protocol.Request) -> Tuple[protocol.Status, Optional[protocol.Response]]:
         future: asyncio.Future[Tuple[protocol.Status, Optional[protocol.Response]]] = self.loop.create_future()
         self.results[(uid := uuid.uuid4())] = future
         self.overflow[uid] = request
-        self.advance_queue()
+        self._advance_queue()
         await future
         _ = self.results.pop(uid)
         return future.result()
 
-    async def get_connection(self) -> Tuple[socket.socket, Tuple[str, int]]:
+    async def _get_connection(self) -> Tuple[socket.socket, Tuple[str, int]]:
         self.logger.debug(f"starting a container...")
         container = self.docker_client.containers.run(
             "ignition", detach=True, auto_remove=True, extra_hosts={"host.docker.internal": "host-gateway"}
@@ -78,10 +73,10 @@ class Server:
         self.logger.debug(f"connection from '{result[1][0]}:{result[1][1]}' received.")
         return result
 
-    async def process(self, uid: uuid.UUID, request: protocol.Request) -> None:
+    async def _process(self, uid: uuid.UUID, request: protocol.Request) -> None:
         self.logger.debug(f"starting to process '{uid}'.")
         self.logger.debug(f"waiting for container to connect to process '{uid}'...")
-        connection, (ip, port) = await self.get_connection()
+        connection, (ip, port) = await self._get_connection()
         self.logger.debug(f"connection '{ip}:{port}' connected to process '{uid}'.")
         self.logger.debug(f"sending request to connection '{ip}:{port}'.")
         await self.communicator.send_request(connection, request)
@@ -101,7 +96,7 @@ class Server:
 
         self.logger.debug(f"removing process '{uid}' from queue.")
         self.queue.remove(uid)
-        self.advance_queue()
+        self._advance_queue()
 
         connection.close()
 
@@ -110,12 +105,12 @@ class Server:
             f"and exited with status '{status}'."
         )
 
-    def advance_queue(self) -> None:
+    def _advance_queue(self) -> None:
         if self.overflow and len(self.queue) < self.queue_size:
             self.logger.debug("advancing the queue.")
             uid, request = self.overflow.popitem(last=False)
             self.queue.add(uid)
-            asyncio.create_task(self.process(uid, request))
+            asyncio.create_task(self._process(uid, request))
         self.logger.info(
             f"current queue: {len(self.queue)} / {self.queue_size} "
             f"with overflow: {len(self.overflow)} / ∞"

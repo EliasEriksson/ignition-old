@@ -36,7 +36,7 @@ def test():
     loop = asyncio.get_event_loop()
     server = ignition.Server(10, logger=logger, loop=loop)
     logger.info("starting test")
-    status, response = loop.run_until_complete(server.schedule_process({
+    status, response = loop.run_until_complete(server.process({
         "language": "python",
         "code": "print('hello world!')",
         "args": ""
@@ -48,35 +48,35 @@ async def _test_async():
     loop = asyncio.get_event_loop()
     server = ignition.Server(3, logger=logger, loop=loop)
     print("testing async")
-    tasks = [asyncio.create_task(server.schedule_process({
+    tasks = [asyncio.create_task(server.process({
         "language": "python",
         "code": "print('hello world!')",
         "args": ""
-    })), asyncio.create_task(server.schedule_process({
+    })), asyncio.create_task(server.process({
         "language": "c",
         "code": "\n".join(["#include <stdio.h>", 'int main(){printf("Hello World");return 0;}']),
         "args": ""
-    })), asyncio.create_task(server.schedule_process({
+    })), asyncio.create_task(server.process({
         "language": "cpp",
         "code": "\n".join(['#include <iostream>', 'int main() {std::cout << "Hello World"; return 0;}']),
         "args": ""
-    })), asyncio.create_task(server.schedule_process({
+    })), asyncio.create_task(server.process({
         "language": "cs",
         "code": 'class Hello {static void Main(string[] args){System.Console.WriteLine("Hello World!");}}',
         "args": ""
-    })), asyncio.create_task(server.schedule_process({
+    })), asyncio.create_task(server.process({
         "language": "javascript",
         "code": "console.log('hello world!')",
         "args": ""
-    })), asyncio.create_task(server.schedule_process({
+    })), asyncio.create_task(server.process({
         "language": "php",
         "code": "echo 'Hello world!'",
         "args": ""
-    })), asyncio.create_task(server.schedule_process({
+    })), asyncio.create_task(server.process({
         "language": "java",
         "code": 'class HelloWorld {public static void main(String[] args) {System.out.println("Hello, World!");}}',
         "args": ""
-    })), asyncio.create_task(server.schedule_process({
+    })), asyncio.create_task(server.process({
         "language": "go",
         "code": "\n".join(["package main", 'import "fmt"', 'func main() {', 'fmt.Println("Hello world!")', "}"]),
         "args": ""
@@ -98,49 +98,49 @@ def test_all():
     loop = asyncio.get_event_loop()
     server = ignition.Server(10, logger=logger, loop=loop)
     logger.info("starting to test all")
-    status, response = loop.run_until_complete(server.schedule_process({
+    status, response = loop.run_until_complete(server.process({
         "language": "python",
         "code": "print('hello world!')",
         "args": ""
     }))
     print(status, response)
-    status, response = loop.run_until_complete(server.schedule_process({
+    status, response = loop.run_until_complete(server.process({
         "language": "c",
         "code": "\n".join(["#include <stdio.h>", 'int main(){printf("Hello World");return 0;}']),
         "args": ""
     }))
     print(status, response)
-    status, response = loop.run_until_complete(server.schedule_process({
+    status, response = loop.run_until_complete(server.process({
         "language": "cpp",
         "code": "\n".join(['#include <iostream>', 'int main() {std::cout << "Hello World"; return 0;}']),
         "args": ""
     }))
     print(status, response)
-    status, response = loop.run_until_complete(server.schedule_process({
+    status, response = loop.run_until_complete(server.process({
         "language": "cs",
         "code": 'class Hello {static void Main(string[] args){System.Console.WriteLine("Hello World!");}}',
         "args": ""
     }))
     print(status, response)
-    status, response = loop.run_until_complete(server.schedule_process({
+    status, response = loop.run_until_complete(server.process({
         "language": "javascript",
         "code": "console.log('hello world!')",
         "args": ""
     }))
     print(status, response)
-    status, response = loop.run_until_complete(server.schedule_process({
+    status, response = loop.run_until_complete(server.process({
         "language": "php",
         "code": "echo 'Hello world!'",
         "args": ""
     }))
     print(status, response)
-    status, response = loop.run_until_complete(server.schedule_process({
+    status, response = loop.run_until_complete(server.process({
         "language": "java",
         "code": 'class HelloWorld {public static void main(String[] args) {System.out.println("Hello, World!");}}',
         "args": ""
     }))
     print(status, response)
-    status, response = loop.run_until_complete(server.schedule_process({
+    status, response = loop.run_until_complete(server.process({
         "language": "go",
         "code": "\n".join(["package main", 'import "fmt"', 'func main() {', 'fmt.Println("Hello world!")', "}"]),
         "args": ""
