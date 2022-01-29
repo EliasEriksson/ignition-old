@@ -71,10 +71,10 @@ class Server:
         self.logger.debug(f"waiting for a container to connect...")
         self.lingering_processes.append(future)
         try:
-            pass
-        except asyncio.TimeoutError:
-            pass
-        await future
+            await asyncio.wait_for(future, 5)
+        except asyncio.TimeoutError as e:
+            self.lingering_processes.remove(future)
+            raise e
         result = future.result()
         self.logger.debug(f"connection from '{result[1][0]}:{result[1][1]}' received.")
         return result
@@ -82,34 +82,46 @@ class Server:
     async def _process(self, uid: uuid.UUID, request: protocol.Request) -> None:
         self.logger.debug(f"starting to process '{uid}'.")
         self.logger.debug(f"waiting for container to connect to process '{uid}'...")
-        connection, (ip, port) = await self._get_connection()
-        self.logger.debug(f"connection '{ip}:{port}' connected to process '{uid}'.")
-        self.logger.debug(f"sending request to connection '{ip}:{port}'.")
-        await self.communicator.send_request(connection, request)
-        self.logger.debug(f"waiting for status from connection '{ip}:{port}'...")
-        status = await self.communicator.recv_status(connection)
-        self.logger.debug(f"received status '{status}' from connection '{ip}:{port}'.")
+        try:
+            connection, (ip, port) = await self._get_connection()
+            self.logger.debug(f"connection '{ip}:{port}' connected to process '{uid}'.")
+            self.logger.debug(f"sending request to connection '{ip}:{port}'.")
+            await self.communicator.send_request(connection, request)
+            self.logger.debug(f"waiting for status from connection '{ip}:{port}'...")
+            status = await self.communicator.recv_status(connection)
+            self.logger.debug(f"received status '{status}' from connection '{ip}:{port}'.")
 
-        if status == protocol.Status.success:
-            self.logger.debug(f"waiting for '{ip}:{port}' to send back a response object...")
-            response = await self.communicator.recv_response(connection)
-            self.logger.debug(f"received response from '{ip}:{port}'.")
-            self.logger.debug(f"defining the response in process '{uid}' to response from '{ip}:{port}'.")
-        else:
-            self.logger.debug(f"defining the response in process '{uid}' to None since '{ip}:{port}' failed.")
-            response = None
-        self.results[uid].set_result((status, response))
+            if status == protocol.Status.success:
+                self.logger.debug(f"waiting for '{ip}:{port}' to send back a response object...")
+                response = await self.communicator.recv_response(connection)
+                self.logger.debug(f"received response from '{ip}:{port}'.")
+                self.logger.debug(f"defining the response in process '{uid}' to response from '{ip}:{port}'.")
+            else:
+                self.logger.debug(f"defining the response in process '{uid}' to None since '{ip}:{port}' failed.")
+                response = None
+            self.results[uid].set_result((status, response))
 
-        self.logger.debug(f"removing process '{uid}' from queue.")
-        self.queue.remove(uid)
-        self._advance_queue()
-
-        connection.close()
-
-        self.logger.info(
-            f"process '{uid}' ran in container from '{ip}:{port}' "
-            f"and exited with status '{status}'."
-        )
+            connection.close()
+            self.logger.info(
+                f"process '{uid}' ran in container from '{ip}:{port}' "
+                f"and exited with status '{status}'."
+            )
+        except asyncio.TimeoutError:
+            status = protocol.Status.internal_server_error
+            self.logger.error(f"no connection from container was made. Aborting process '{uid}'.")
+            self.results[uid].set_result((status, {
+                "stdout": None,
+                "stderr": None,
+                "ns": 0
+            }))
+            self.logger.info(
+                f"process '{uid}' did not receive a connection "
+                f"and exited with status '{status}'."
+            )
+        finally:
+            self.logger.debug(f"removing process '{uid}' from queue.")
+            self.queue.remove(uid)
+            self._advance_queue()
 
     def _advance_queue(self) -> None:
         if self.overflow and len(self.queue) < self.queue_size:

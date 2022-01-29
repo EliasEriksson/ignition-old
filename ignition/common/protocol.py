@@ -7,6 +7,7 @@ class Status(Enum):
     success = 200
     bad_request = 400
     timeout = 408
+    internal_server_error = 500
     not_implemented = 501
     close = 1000
 

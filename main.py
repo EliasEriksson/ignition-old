@@ -50,7 +50,7 @@ async def _test_async():
     print("testing async")
     tasks = [asyncio.create_task(server.process({
         "language": "python",
-        "code": "print('hello world!')",
+        "code": "print('Hello world!')",
         "args": ""
     })), asyncio.create_task(server.process({
         "language": "c",
