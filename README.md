@@ -11,7 +11,8 @@ Written in python3.9.
 ## Install and run
 
 If your user does not have access to docker commands 
-`python` must be replaced with `venv/bin/python` in the commands using `main.py`.
+`python` must be replaced with `venv/bin/python` in the commands using `main.py` and be run using `sudo`.
+Otherwise, the process will not have access to docker which is essential for the application to work.
 
 0. Clone: `git clone https://github.com/eliaseriksson/ignition && cd ignition`
 1. Create a venv: `python3 -m venv venv`
