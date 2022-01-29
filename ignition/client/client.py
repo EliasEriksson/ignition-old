@@ -9,7 +9,6 @@ from pathlib import Path
 import tempfile
 from uuid import uuid4
 from ..logger import get_logger
-import sys
 
 
 logger = get_logger(__name__, logging.INFO, stdout=True)

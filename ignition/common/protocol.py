@@ -12,9 +12,6 @@ class Status(Enum):
     close = 1000
 
 
-RequestTypes = Literal["file", "text"]
-
-
 class Request(TypedDict):
     language: str
     args: str
