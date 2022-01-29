@@ -13,6 +13,9 @@ import uuid
 
 
 def setup_socket() -> socket.socket:
+    """
+    helper method for setting upp the tcp socket
+    """
     sock = socket.socket()
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.bind(("", 6090))
@@ -22,6 +25,24 @@ def setup_socket() -> socket.socket:
 
 
 class Server:
+    """
+    the ignition server.
+
+    the server communicates uses the docker sdk to spawn containers containing an ignition client.
+    the client will be sent a request to process and a response will be given back.
+
+    the public API only consists of the __init__ and process methods. everything else is internal.
+
+    when the process method is used the process is added to the queue. if there is room
+    in the queue the process will start to process otherwise it will wait in overflow
+    until there is room.
+
+    when the process is processing a container is spawned using the docker sdk and a connection is
+    expected to be established within max 5 seconds. if it takes longer something is wrong.
+
+    if the connection was established the request is sent to the client for processing and the
+    response will be returned.
+    """
     communicator: Communicator
     loop: asyncio.AbstractEventLoop
     docker_client: docker.DockerClient
@@ -52,6 +73,13 @@ class Server:
         self.loop.create_task(self._run())
 
     async def process(self, request: protocol.Request) -> Tuple[protocol.Status, Optional[protocol.Response]]:
+        """
+        queues the request to be processed.
+
+        creates a future in which the result can be set.
+        adds the requests in the queue and attempts to advance the queue.
+        waits for the future to be set and returns the response.
+        """
         future: asyncio.Future[Tuple[protocol.Status, Optional[protocol.Response]]] = self.loop.create_future()
         self.results[(uid := uuid.uuid4())] = future
         self.overflow[uid] = request
@@ -61,6 +89,14 @@ class Server:
         return future.result()
 
     async def _get_connection(self) -> Tuple[socket.socket, Tuple[str, int]]:
+        """
+        starts a container and waits to receive a connection
+
+        starts the container and creates a future in which the connection can be defined
+        from _run() whenever a connection is established.
+
+        if connection is established within 5 seconds the connection is returned else a asyncio.TimeoutError is raised.
+        """
         self.logger.debug(f"starting a container...")
         container = self.docker_client.containers.run(
             "ignition", detach=True, auto_remove=True, extra_hosts={"host.docker.internal": "host-gateway"}
@@ -80,6 +116,13 @@ class Server:
         return result
 
     async def _process(self, uid: uuid.UUID, request: protocol.Request) -> None:
+        """
+        processes a request.
+
+        starts and waits for a client to connect.
+        when a client connects the requests is sent and the response is received.
+        when the response is received the future created in process() is set.
+        """
         self.logger.info(f"starting to process '{uid}'.")
         self.logger.debug(f"waiting for container to connect to process '{uid}'...")
         try:
@@ -109,11 +152,7 @@ class Server:
         except asyncio.TimeoutError:
             status = protocol.Status.internal_server_error
             self.logger.error(f"no connection from container was made. Aborting process '{uid}'.")
-            self.results[uid].set_result((status, {
-                "stdout": None,
-                "stderr": None,
-                "ns": 0
-            }))
+            self.results[uid].set_result((status, None))
             self.logger.info(
                 f"process '{uid}' did not receive a connection "
                 f"and exited with status '{status}'."
@@ -124,7 +163,15 @@ class Server:
             self._advance_queue()
 
     def _advance_queue(self) -> None:
-        if self.overflow and len(self.queue) < self.queue_size:
+        """
+        advances the queue.
+
+        moves and starts processes from overflow to the queue if there is room.
+
+        IMPORTANT this method NEEDS to be called whenever self.queue is mutated.
+        should probably make get and set property in the future.
+        """
+        while self.overflow and len(self.queue) < self.queue_size:
             self.logger.debug("advancing the queue.")
             uid, request = self.overflow.popitem(last=False)
             self.queue.add(uid)
@@ -135,6 +182,12 @@ class Server:
         )
 
     async def _run(self) -> None:
+        """
+        handles incoming connection from clients from docker containers.
+
+        whenever a client connects the first process in the queue is given the connection
+        by setting a future.
+        """
         try:
             while True:
                 connection, address = await self.loop.sock_accept(self.sock)
