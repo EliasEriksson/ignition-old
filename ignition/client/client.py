@@ -26,8 +26,7 @@ class Client:
     communicator: Communicator
     sock: socket.socket
     connected: bool
-    lifetime_duration = 60
-    timeout_duration = 30
+    process_timeout = 30
 
     def __init__(self, loop: Optional[asyncio.AbstractEventLoop] = None):
         self.loop = loop if loop else asyncio.get_event_loop()
@@ -45,7 +44,7 @@ class Client:
                 try:
                     response: protocol.Response = await asyncio.wait_for(
                         Languages[language](script_path, request["args"]),
-                        self.timeout_duration
+                        self.process_timeout
                     )
                     await self.communicator.send_status(connection, protocol.Status.success)
                     await self.communicator.send_response(connection, response)
@@ -55,16 +54,9 @@ class Client:
         else:
             await self.communicator.send_status(connection, protocol.Status.not_implemented)
 
-    async def timeout(self):
-        await asyncio.sleep(self.lifetime_duration)
-        if self.connected:
-            await asyncio.sleep(self.timeout_duration)
-        sys.exit()
-
     async def run(self) -> None:
         logger.info("client running...")
         try:
-            asyncio.create_task(self.timeout())
             connection = setup_socket()
             await self.loop.sock_connect(connection, ("host.docker.internal", 6090))
             await self.handle_connection(connection)

@@ -80,7 +80,7 @@ class Server:
         return result
 
     async def _process(self, uid: uuid.UUID, request: protocol.Request) -> None:
-        self.logger.debug(f"starting to process '{uid}'.")
+        self.logger.info(f"starting to process '{uid}'.")
         self.logger.debug(f"waiting for container to connect to process '{uid}'...")
         try:
             connection, (ip, port) = await self._get_connection()
