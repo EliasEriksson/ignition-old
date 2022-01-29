@@ -3,6 +3,12 @@ from enum import Enum
 
 
 class Status(Enum):
+    """
+    used to send status messages.
+
+    all status messages represent real HTTP status codes or
+    websocket status codes
+    """
     waiting = 100
     success = 200
     bad_request = 400
@@ -13,12 +19,18 @@ class Status(Enum):
 
 
 class Request(TypedDict):
+    """
+    used for type hinting dictionaries with these attributes.
+    """
     language: str
     args: str
     code: str
 
 
 class Response(TypedDict):
+    """
+    used to type hinting dictionaries with these attributes.
+    """
     stdout: Optional[str]
     stderr: Optional[str]
     ns: float
