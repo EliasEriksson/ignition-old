@@ -18,7 +18,7 @@ class Request(BaseModel):
     args: str
 
 
-@app.get(f"{root_url}/process/")
+@app.post(f"{root_url}/process/")
 async def process(request: Request):
     status, response = await server.process(dict(request))
     return {"status": status, "response": response}
