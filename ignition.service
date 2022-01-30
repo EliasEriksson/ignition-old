@@ -1,0 +1,12 @@
+[Unit]
+Description=ChangeDescription
+After=multi-user.target
+StartLimitIntervalSec=60
+
+[Service]
+Restart=on-failure
+ExecStart=sudo -u www-data /var/www/eliaseriksson.io/ignition/venv/bin/python /var/www/eliaseriksson.io/ignition/main.py server --port 8084
+WorkingDirectory=/var/www/eliaseriksson.io/ignition/
+
+[Install]
+WantedBy=multi-user.target

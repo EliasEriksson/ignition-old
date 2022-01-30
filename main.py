@@ -40,7 +40,7 @@ def start_client(_args):
 
 def start_server(_args):
     uvicorn.run(
-        "app:app", port=_args.port,
+        "app:app", port=_args.port, proxy_headers=True, forwarded_allow_ips="*"
     )
 
 
@@ -124,5 +124,4 @@ if __name__ == '__main__':
         "client": lambda _args: start_client(_args),
         "test": lambda _args: test(_args),
     }
-    args = parser.parse_args()
-    modes[args.mode](args)
+    modes[(args := parser.parse_args()).mode](args)
