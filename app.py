@@ -18,6 +18,36 @@ class Request(BaseModel):
     args: str
 
 
+@app.get(f"{root_url}/snippets/")
+async def get_snippets():
+    pass
+
+
+@app.post(f"{root_url}/snippets/")
+async def post_snippets():
+    pass
+
+
+@app.post(f"{root_url}/snippets/")
+async def put_snippets():
+    pass
+
+
+@app.post(f"{root_url}/snippets/")
+async def delete_snippets():
+    pass
+
+
+@app.post(f"{root_url}/login/")
+async def get_login():
+    pass
+
+
+@app.post(f"{root_url}/login/")
+async def post_login():
+    pass
+
+
 @app.post(f"{root_url}/process/")
 async def process(request: Request):
     status, response = await server.process(dict(request))
