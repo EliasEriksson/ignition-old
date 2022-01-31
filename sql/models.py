@@ -10,8 +10,10 @@ class User(Base):
     id = Column(Integer, primary_key=True)
 
     email = Column(String, unique=True, nullable=False)
-    passwordHash = Column(String, nullable=False)
+    password_hash = Column(String, nullable=False)
     token = Column(UUID(as_uuid=True), unique=True, nullable=False)
+
+    snippets = relationship("Snippet", back_populates="snippet")
 
 
 class Snippet(Base):
@@ -19,7 +21,8 @@ class Snippet(Base):
     id = Column(UUID(as_uuid=True), primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"))
 
-    args = Column(String, nullable=False)
+    language = Column(String, nullable=False)
     code = Column(String, nullable=False)
+    args = Column(String, nullable=False)
 
     user = relationship("User", back_populates="snippets", cascade="all, delete-orphan")
