@@ -4,16 +4,11 @@ import logging
 import ignition
 from fastapi import FastAPI
 from pydantic import BaseModel
-from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
 
-
-engine = create_async_engine(
-    "postgres+asyncpg://ignition"
-)
 
 loop = asyncio.get_event_loop()
+
+
 server = ignition.Server(10, ignition.get_logger(__name__, logging.INFO), loop=loop)
 app = FastAPI()
 root_url = "/ignition/api"

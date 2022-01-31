@@ -39,8 +39,16 @@ def start_client(_args):
 
 
 def start_server(_args):
+    kwargs = {
+        "port": _args.port,
+        "proxy_headers": True,
+        "forwarded_allow_ips": "*"
+    }
+    if _args.dev:
+        kwargs["reload"] = True
+
     uvicorn.run(
-        "app:app", port=_args.port, proxy_headers=True, forwarded_allow_ips="*"
+        "app:app", **kwargs
     )
 
 
@@ -110,6 +118,8 @@ if __name__ == '__main__':
         "server", help="start ignitions webserver.")
     server_parser.add_argument(
         "--port", type=int, default=8080, help="port for the webserver.")
+    server_parser.add_argument(
+        "--dev", action="store_true", help="start a development server.")
 
     client_parser = sub_parsers.add_parser(
         "client", help="starts a ignition client (internal use).")
