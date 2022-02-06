@@ -3,6 +3,7 @@ from pydantic import BaseModel
 import uuid
 from sqlalchemy.dialects.postgresql import UUID
 
+
 # model base data
 class UserBase(BaseModel):
     email: str

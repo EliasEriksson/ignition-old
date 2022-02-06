@@ -7,6 +7,7 @@ Written in python3.9.
 ## Non python Dependencies
 
 * Docker
+* libpq-dev
 
 ## Install and run
 
@@ -20,7 +21,18 @@ Otherwise, the process will not have access to docker which is essential for the
 3. Install python dependencies: `python -m pip install -r requirements.txt`
 4. Build the Docker image: `python main.py build-docker-image`
 5. Make sure its working `python main.py test`
-6. Start the webserver: `python main.py server`
+6. Create database credentials file `.credentials.json` in `sql/` module: `nano sql/.credentials.json`
+   ```json
+   {
+     "role": "postgresRole",
+     "password": "rolresPassword",
+     "db": "applicationDatabaseName",
+     "host": "localhost",
+     "port": 5432
+   }
+   ```
+8. Initialize the database `python main.py db init`
+9. Start the webserver: `python main.py server`
 
 ## Production comments
 There might be better ways of running the application in production.

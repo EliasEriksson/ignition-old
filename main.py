@@ -7,6 +7,7 @@ import asyncio
 import subprocess
 import uvicorn
 import enum
+import sql
 
 
 logger = ignition.get_logger(__name__, logging.INFO, stdout=True)
@@ -101,6 +102,10 @@ def test(_args):
     asyncio.run(_test())
 
 
+def db(_args):
+    sql.models.Base.metadata.create_all(bind=sql.database.engine)
+
+
 def build_docker_image(_args):
     process(f"docker build --tag ignition {Path(__file__).parent}")
 
@@ -128,10 +133,16 @@ if __name__ == '__main__':
         "test", help="test the ignition internals.")
     test_parser.add_argument("--app-port", type=int, help="port for ignitions internal use.")
 
+    db_parser = sub_parsers.add_parser(
+        "db", help="CLI utility for managing the database.")
+    db_sub_parser = db_parser.add_subparsers(dest="db_mode")
+    db_init_parser = db_sub_parser.add_parser("init", help="initializes the database.")
+
     modes = {
         "build-docker-image": lambda _args: build_docker_image(_args),
         "server": lambda _args: start_server(_args),
         "client": lambda _args: start_client(_args),
         "test": lambda _args: test(_args),
+        "db": lambda _args: db(_args)
     }
     modes[(args := parser.parse_args()).mode](args)
