@@ -9,7 +9,6 @@ import uvicorn
 import enum
 import sql
 
-
 logger = ignition.get_logger(__name__, logging.INFO, stdout=True)
 
 
@@ -103,7 +102,17 @@ def test(_args):
 
 
 def db(_args):
-    sql.models.Base.metadata.create_all(bind=sql.database.engine)
+    def init(_db_args):
+        sql.models.Base.metadata.create_all(bind=sql.database.engine)
+
+    def drop(_db_args):
+        print("drop not implemented")
+
+    db_modes = {
+        "init": lambda _db_args: init(_db_args),
+        "drop": lambda _db_args: drop(_db_args)
+    }
+    db_modes[_args.db_mode](_args)
 
 
 def build_docker_image(_args):
@@ -137,6 +146,7 @@ if __name__ == '__main__':
         "db", help="CLI utility for managing the database.")
     db_sub_parser = db_parser.add_subparsers(dest="db_mode")
     db_init_parser = db_sub_parser.add_parser("init", help="initializes the database.")
+    db_recreate_parser = db_sub_parser.add_parser("drop", help="drops the database.")
 
     modes = {
         "build-docker-image": lambda _args: build_docker_image(_args),

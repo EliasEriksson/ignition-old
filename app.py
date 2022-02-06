@@ -4,6 +4,7 @@ import logging
 import ignition
 from fastapi import FastAPI
 from pydantic import BaseModel
+from .sql.database import Session
 
 
 loop = asyncio.get_event_loop()
@@ -44,10 +45,10 @@ async def delete_snippets():
 async def get_login():
     pass
 
-
 @app.post(f"{root_url}/login/")
 async def post_login():
-    pass
+    with Session() as session:
+        pass
 
 
 @app.post(f"{root_url}/process/")

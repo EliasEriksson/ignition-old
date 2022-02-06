@@ -17,7 +17,7 @@ class SnippetBase(BaseModel):
 
 # model creation data
 class UserCreate(UserBase):
-    password_hash: str
+    password: str
 
 
 class SnippetCreate(SnippetBase):
@@ -34,6 +34,7 @@ class Snippet(SnippetBase):
 
 class User(UserBase):
     id: uuid.UUID
+    token: str
 
     class Config:
         orm_mode = True

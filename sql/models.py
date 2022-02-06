@@ -1,13 +1,12 @@
 from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 from .database import Base
-from argon2 import PasswordHasher
 from sqlalchemy.dialects.postgresql import UUID
 
 
 class User(Base):
     __tablename__ = "users"
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
 
     email = Column(String, unique=True, nullable=False)
     password_hash = Column(String, nullable=False)
