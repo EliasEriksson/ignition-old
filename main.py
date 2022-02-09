@@ -132,7 +132,6 @@ def db(_args):
     def drop(_db_args):
         sql.models.Base.metadata.drop_all(bind=sql.database.engine)
 
-
     db_modes = {
         "init": lambda _db_args: init(_db_args),
         "drop": lambda _db_args: drop(_db_args)
