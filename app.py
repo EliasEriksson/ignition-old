@@ -43,7 +43,7 @@ async def delete_snippets():
     pass
 
 
-@app.post(f"{root_url}/authenticate/")
+@app.post(f"{root_url}/authenticate/", status_code=200)
 async def authenticate_user(model: sql.schemas.UserAuth):
     with sql.database.Session() as session:
         return sql.crud.User(session).get_by_email(model.email)
