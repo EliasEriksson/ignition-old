@@ -4,7 +4,7 @@ import logging
 import ignition
 from fastapi import FastAPI
 from pydantic import BaseModel
-from .sql.database import Session
+from sql.database import Session
 
 
 loop = asyncio.get_event_loop()

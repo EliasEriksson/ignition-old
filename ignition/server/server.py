@@ -189,11 +189,13 @@ class Server:
         by setting a future.
         """
         try:
+            self.logger.info(f"listening for connections on port 6090...")
             while True:
                 connection, address = await self.loop.sock_accept(self.sock)
                 if self.lingering_processes:
                     self.lingering_processes.pop(0).set_result((connection, address))
                 else:
+                    self.logger.info(f"connection received but no process needs a client. closing connection.")
                     connection.close()
         except ConnectionError:
             self.logger.debug(f"container connected but no process was waiting for a connection.")

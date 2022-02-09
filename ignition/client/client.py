@@ -89,7 +89,10 @@ class Client:
         try:
             connection = setup_socket()
             # domain name set by docker. will error if run outside of docker.
-            await self.loop.sock_connect(connection, ("host.docker.internal", 6090))
+            hostname = "host.docker.internal"
+            port = 6090
+            logger.info(f"attempting to connect to {hostname}:{port}")
+            await self.loop.sock_connect(connection, (hostname, port))
             await self.handle_connection(connection)
         except Exception as e:
             logger.critical(e)

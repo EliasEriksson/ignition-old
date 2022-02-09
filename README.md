@@ -8,6 +8,7 @@ Written in python3.9.
 
 * Docker
 * libpq-dev
+* Open port 6090 in firewall.
 
 ## Install and run
 

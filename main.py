@@ -126,7 +126,7 @@ if __name__ == '__main__':
     sub_parsers = parser.add_subparsers(dest="mode")
 
     docker_parser = sub_parsers.add_parser(
-        "build-docker-image", help="building the docker image.")
+        "build", help="building the docker image.")
 
     server_parser = sub_parsers.add_parser(
         "server", help="start ignitions webserver.")
@@ -149,7 +149,7 @@ if __name__ == '__main__':
     db_recreate_parser = db_sub_parser.add_parser("drop", help="drops the database.")
 
     modes = {
-        "build-docker-image": lambda _args: build_docker_image(_args),
+        "build": lambda _args: build_docker_image(_args),
         "server": lambda _args: start_server(_args),
         "client": lambda _args: start_client(_args),
         "test": lambda _args: test(_args),
