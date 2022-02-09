@@ -104,9 +104,34 @@ def test(_args):
 def db(_args):
     def init(_db_args):
         sql.models.Base.metadata.create_all(bind=sql.database.engine)
+        sql.database.engine.execute(
+            """
+            create or replace function update_expiration() returns trigger as
+            $$
+            BEGIN
+                new.expires = now() + interval '1h';
+                return new;
+            end
+            $$ language 'plpgsql';
+            
+            create or replace function update_expiration_of_row(row_id integer) returns void as
+            $$
+            begin
+                update tokens set expires=now() + interval '1h' where tokens.id = row_id;
+            end;
+            $$ language 'plpgsql';
+            
+            create trigger update_expirations
+                before update of value
+                on tokens
+                for row
+            execute procedure update_expiration();
+            """
+        )
 
     def drop(_db_args):
-        print("drop not implemented")
+        sql.models.Base.metadata.drop_all(bind=sql.database.engine)
+
 
     db_modes = {
         "init": lambda _db_args: init(_db_args),

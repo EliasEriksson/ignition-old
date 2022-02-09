@@ -2,16 +2,18 @@ import asyncio
 import logging
 
 import ignition
-from fastapi import FastAPI
+# from fastapi import FastAPI
+import fastapi
 from pydantic import BaseModel
-from sql.database import Session
+import sql
+from sqlalchemy.orm import Session
 
 
 loop = asyncio.get_event_loop()
 
 
 server = ignition.Server(10, ignition.get_logger(__name__, logging.INFO), loop=loop)
-app = FastAPI()
+app = fastapi.FastAPI()
 root_url = "/ignition/api"
 
 
@@ -41,17 +43,26 @@ async def delete_snippets():
     pass
 
 
-@app.post(f"{root_url}/login/")
-async def get_login():
-    pass
+@app.post(f"{root_url}/authenticate/")
+async def authenticate_user(model: sql.schemas.UserAuth):
+    with sql.database.Session() as session:
+        return sql.crud.User(session).get_by_email(model.email)
 
-@app.post(f"{root_url}/login/")
-async def post_login():
-    with Session() as session:
-        pass
+
+@app.post(f"{root_url}/register/", status_code=201)
+async def create_user(model: sql.schemas.UserAuth) -> sql.schemas.User:
+    with sql.database.Session() as session:
+        return sql.crud.User(session).create(model)
+
+
+@app.post(f"{root_url}/logout/", status_code=204)
+async def logout_user(token: sql.schemas.Token):
+    with sql.database.Session() as session:  # type: Session
+        sql.crud.Token(session).delete_by_value(token.value)
+    return fastapi.Response(status_code=204)
 
 
 @app.post(f"{root_url}/process/")
 async def process(request: Request):
-    status, response = await server.process(dict(request))
+    status, response = await server.process(request.dict())
     return {"status": status, "response": response}
