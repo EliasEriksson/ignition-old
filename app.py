@@ -1,9 +1,7 @@
 import asyncio
 import logging
 import uuid
-
 import ignition
-# from fastapi import FastAPI
 import fastapi
 from pydantic import BaseModel
 import sql
@@ -14,8 +12,8 @@ loop = asyncio.get_event_loop()
 
 
 server = ignition.Server(10, ignition.get_logger(__name__, logging.INFO), loop=loop)
-app = fastapi.FastAPI()
 root_url = "/ignition/api"
+app = fastapi.FastAPI(docs_url=f"{root_url}/docs/")
 
 
 class Request(BaseModel):
@@ -24,42 +22,92 @@ class Request(BaseModel):
     args: str
 
 
-@app.get(f"{root_url}/snippets/")
-async def get_snippets():
-    pass
+@app.get(f"{root_url}/snippets/{{id}}/")
+async def get_snippets(id: uuid.UUID):
+    with sql.database.Session() as session:
+        with sql.crud.Snippet(session) as crud:
+            snippet = crud.get_by_id(id)
+        return snippet
 
 
 @app.post(f"{root_url}/snippets/")
-async def post_snippets(model: sql.schemas.SnippetCreate) -> sql.schemas.Snippet:
+async def create_snippets(
+        data: sql.schemas.SnippetCreate,
+        authorization: str = fastapi.Header(None)
+) -> sql.schemas.Snippet:
     with sql.database.Session() as session:
-        return sql.crud.Snippet(session).create(model)
+        with sql.crud.Token(session) as crud:
+            token = crud.get_by_header(authorization)
+        with sql.crud.Snippet(session, token) as crud:
+            snippet = crud.create(token.user, data)
+        return snippet
 
 
-@app.post(f"{root_url}/snippets/{{id}}")
-async def put_snippets(id: uuid.UUID, model: sql.schemas.SnippetCreate):
+@app.put(f"{root_url}/snippets/{{id}}/")
+async def update_snippets(
+        id: uuid.UUID,
+        data: sql.schemas.SnippetCreate,
+        authorization: str = fastapi.Header(None)
+) -> sql.schemas.Snippet:
     with sql.database.Session() as session:
-        return sql.crud.Snippet(session).update_by_id(id, model)
+        with sql.crud.Token(session) as crud:
+            token = crud.get_by_header(authorization)
+        with sql.crud.Snippet(session, token) as crud:
+            snippet = crud.update_by_id(id, data)
+        return snippet
 
 
-@app.post(f"{root_url}/snippets/")
-async def delete_snippets():
-    pass
+@app.delete(f"{root_url}/snippets/{{id}}/")
+async def delete_snippets(
+        id: uuid.UUID,
+        authorization: str = fastapi.Header(None)
+) -> sql.schemas.Snippet:
+    with sql.database.Session() as session:
+        with sql.crud.Token(session) as crud:
+            token = crud.get_by_header(authorization)
+        with sql.crud.Snippet(session, token) as crud:
+            snippet = crud.delete_by_id(id)
+        return snippet
 
 
 @app.post(f"{root_url}/authenticate/", status_code=200)
-async def authenticate_user(model: sql.schemas.UserAuth):
+async def authenticate_user(
+        data: sql.schemas.UserAuth
+):
     with sql.database.Session() as session:
-        return sql.crud.User(session).get_by_email(model.email)
+        with sql.crud.User(session) as crud:
+            user = crud.get_by_email(data.email)
+        if not user:
+            return fastapi.Response(status_code=400)
+        if not sql.crud.hasher.verify(user.password_hash, data.password):
+            return fastapi.Response(status_code=401)
+
+        with sql.crud.Token(session) as crud:
+            crud.create(user)
+
+        return sql.schemas.User(
+            id=user.id, email=user.email, token=user.token
+        )
 
 
 @app.post(f"{root_url}/register/", status_code=201)
-async def create_user(model: sql.schemas.UserAuth) -> sql.schemas.User:
+async def create_user(
+        data: sql.schemas.UserAuth
+) -> sql.schemas.User:
     with sql.database.Session() as session:
-        return sql.crud.User(session).create(model)
+        with sql.crud.User(session) as crud:
+            user = crud.create(data)
+        with sql.crud.Token(session) as crud:
+            crud.create(user)
+        return sql.schemas.User(
+            id=user.id, email=user.email, token=user.token
+        )
 
 
 @app.post(f"{root_url}/logout/", status_code=204)
-async def logout_user(token: sql.schemas.Token):
+async def logout_user(
+        token: sql.schemas.Token
+):
     with sql.database.Session() as session:  # type: Session
         sql.crud.Token(session).delete_by_value(token.value)
     return fastapi.Response(status_code=204)
