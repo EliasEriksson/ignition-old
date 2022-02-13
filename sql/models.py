@@ -21,7 +21,7 @@ class Token(Base):
     id = Column(Integer, autoincrement=True, primary_key=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, unique=True)
 
-    value = Column(String, unique=True, nullable=False, server_default=text("gen_token()"))
+    value = Column(String, unique=True, nullable=False, server_default=text(f"gen_token('tokens')"))  # server default gen_token()
     expires = Column(TIMESTAMP(), server_default=text("now() + interval '1h'"))
 
     user = relationship("User", back_populates="token", uselist=False)
