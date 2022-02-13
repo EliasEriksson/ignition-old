@@ -104,42 +104,7 @@ def test(_args):
 def db(_args):
     def init(_db_args):
         sql.models.Base.metadata.create_all(bind=sql.database.engine)
-        sql.database.engine.execute(
-            """
-            create extension if not exists pgcrypto;
-            
-            create or replace function update_expiration() returns trigger as
-            $$
-            BEGIN
-                new.expires = now() + interval '1h';
-                return new;
-            end
-            $$ language 'plpgsql';
-            
-            create or replace function update_expiration_of_row(row_id integer) returns void as
-            $$
-            begin
-                update tokens set expires=now() + interval '1h' where tokens.id = row_id;
-            end;
-            $$ language 'plpgsql';
-            
-            create trigger update_expirations
-                before update of value
-                on tokens
-                for row
-            execute procedure update_expiration();
-            
-            create or replace function gen_token() returns text as
-            $$
-            declare
-                row_byte bytea;
-            begin
-                row_byte = int8send((select count(*) from tokens));
-                return encode(sha256(gen_random_bytes(32) || row_byte), 'base64');
-            end;
-            $$ language 'plpgsql';
-            """
-        )
+        sql.database.engine.execute(sql.raw.init_sql)
 
     def drop(_db_args):
         sql.models.Base.metadata.drop_all(bind=sql.database.engine)

@@ -1,14 +1,13 @@
-from sqlalchemy import Column, ForeignKey, String, Integer, TIMESTAMP, DDL, event
+from sqlalchemy import Column, ForeignKey, String, Integer, TIMESTAMP
 from sqlalchemy.orm import relationship
 from .database import Base
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql.expression import text
-import secrets
 
 
 class User(Base):
     __tablename__ = "users"
-    id = Column(UUID(as_uuid=True), server_default=text("gen_random_uuid()"), primary_key=True)
+    id = Column(UUID(as_uuid=True), server_default=text(f"gen_random_uuid()"), primary_key=True)
 
     email = Column(String, unique=True, nullable=False)
     password_hash = Column(String, nullable=False)
