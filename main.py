@@ -105,8 +105,8 @@ def test(_args):
 
 def db(_args):
     def init(_db_args):
-        sql.models.Base.metadata.create_all(bind=sql.database.engine)
         sql.database.engine.execute(sql.raw.init_sql)
+        sql.models.Base.metadata.create_all(bind=sql.database.engine)
 
     def drop(_db_args):
         sql.models.Base.metadata.drop_all(bind=sql.database.engine)
