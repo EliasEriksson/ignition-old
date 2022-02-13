@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import uuid
 
 import ignition
 # from fastapi import FastAPI
@@ -29,13 +30,15 @@ async def get_snippets():
 
 
 @app.post(f"{root_url}/snippets/")
-async def post_snippets():
-    pass
+async def post_snippets(model: sql.schemas.SnippetCreate) -> sql.schemas.Snippet:
+    with sql.database.Session() as session:
+        return sql.crud.Snippet(session).create(model)
 
 
-@app.post(f"{root_url}/snippets/")
-async def put_snippets():
-    pass
+@app.post(f"{root_url}/snippets/{{id}}")
+async def put_snippets(id: uuid.UUID, model: sql.schemas.SnippetCreate):
+    with sql.database.Session() as session:
+        return sql.crud.Snippet(session).update_by_id(id, model)
 
 
 @app.post(f"{root_url}/snippets/")

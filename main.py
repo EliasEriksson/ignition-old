@@ -106,6 +106,8 @@ def db(_args):
         sql.models.Base.metadata.create_all(bind=sql.database.engine)
         sql.database.engine.execute(
             """
+            create extension if not exists pgcrypto;
+            
             create or replace function update_expiration() returns trigger as
             $$
             BEGIN
@@ -126,6 +128,16 @@ def db(_args):
                 on tokens
                 for row
             execute procedure update_expiration();
+            
+            create or replace function gen_token() returns text as
+            $$
+            declare
+                row_byte bytea;
+            begin
+                row_byte = int8send((select count(*) from tokens));
+                return encode(sha256(gen_random_bytes(32) || row_byte), 'base64');
+            end;
+            $$ language 'plpgsql';
             """
         )
 

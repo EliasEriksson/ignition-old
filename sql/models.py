@@ -22,8 +22,7 @@ class Token(Base):
     id = Column(Integer, autoincrement=True, primary_key=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, unique=True)
 
-    # TODO can create duplicates. check for duplicate error when creating.
-    value = Column(String, unique=True, nullable=False, default=secrets.token_urlsafe)
+    value = Column(String, unique=True, nullable=False, server_default=text("gen_token()"))
     expires = Column(TIMESTAMP(), server_default=text("now() + interval '1h'"))
 
     user = relationship("User", back_populates="token", uselist=False)
