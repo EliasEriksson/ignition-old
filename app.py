@@ -26,8 +26,7 @@ class Request(BaseModel):
 
 
 @app.get(f"{root_url}/snippets/{{id}}/")
-async def get_snippets(id: uuid.UUID, request: fastapi.Request):
-    print(request.scope)
+async def get_snippets(id: uuid.UUID):
     with sql.database.Session() as session:
         with sql.crud.Snippet(session) as crud:
             snippet = crud.get_by_id(id)
@@ -37,11 +36,11 @@ async def get_snippets(id: uuid.UUID, request: fastapi.Request):
 @app.post(f"{root_url}/snippets/")
 async def create_snippets(
         data: sql.schemas.SnippetCreate,
-        authorization: str = fastapi.Header(None)
+        auth: str = fastapi.Header(None)
 ) -> sql.schemas.Snippet:
     with sql.database.Session() as session:
         with sql.crud.Token(session) as crud:
-            token = crud.get_by_header(authorization)
+            token = crud.get_by_header(auth)
         with sql.crud.Snippet(session, token) as crud:
             snippet = crud.create(token.user, data)
         return snippet
@@ -51,11 +50,11 @@ async def create_snippets(
 async def update_snippets(
         id: uuid.UUID,
         data: sql.schemas.SnippetCreate,
-        authorization: str = fastapi.Header(None)
+        auth: str = fastapi.Header(None)
 ) -> sql.schemas.Snippet:
     with sql.database.Session() as session:
         with sql.crud.Token(session) as crud:
-            token = crud.get_by_header(authorization)
+            token = crud.get_by_header(auth)
         with sql.crud.Snippet(session, token) as crud:
             snippet = crud.update_by_id(id, data)
         return snippet
@@ -64,11 +63,11 @@ async def update_snippets(
 @app.delete(f"{root_url}/snippets/{{id}}/")
 async def delete_snippets(
         id: uuid.UUID,
-        authorization: str = fastapi.Header(None)
+        auth: str = fastapi.Header(None)
 ) -> sql.schemas.Snippet:
     with sql.database.Session() as session:
         with sql.crud.Token(session) as crud:
-            token = crud.get_by_header(authorization)
+            token = crud.get_by_header(auth)
         with sql.crud.Snippet(session, token) as crud:
             snippet = crud.delete_by_id(id)
         return snippet
