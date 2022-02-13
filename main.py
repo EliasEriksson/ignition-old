@@ -39,8 +39,10 @@ def start_client(_args):
 
 
 def start_server(_args):
+    print(_args)
     kwargs = {
         "port": _args.port,
+        "root_path": _args.root_path,
         "proxy_headers": True,
         "forwarded_allow_ips": "*"
     }
@@ -135,6 +137,8 @@ if __name__ == '__main__':
         "--port", type=int, default=8080, help="port for the webserver.")
     server_parser.add_argument(
         "--dev", action="store_true", help="start a development server.")
+    server_parser.add_argument(
+        "--root-path", type=str, default="", help="application root url.")
 
     client_parser = sub_parsers.add_parser(
         "client", help="starts a ignition client (internal use).")

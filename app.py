@@ -13,7 +13,10 @@ loop = asyncio.get_event_loop()
 
 server = ignition.Server(10, ignition.get_logger(__name__, logging.INFO), loop=loop)
 root_url = "/ignition/api"
-app = fastapi.FastAPI(docs_url=f"{root_url}/docs/")
+app = fastapi.FastAPI(
+    docs_url=f"{root_url}/docs",
+    openapi_url=f"{root_url}/openapi.json"
+)
 
 
 class Request(BaseModel):
@@ -23,7 +26,8 @@ class Request(BaseModel):
 
 
 @app.get(f"{root_url}/snippets/{{id}}/")
-async def get_snippets(id: uuid.UUID):
+async def get_snippets(id: uuid.UUID, request: fastapi.Request):
+    print(request.scope)
     with sql.database.Session() as session:
         with sql.crud.Snippet(session) as crud:
             snippet = crud.get_by_id(id)
