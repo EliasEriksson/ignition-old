@@ -8,6 +8,7 @@ import subprocess
 import uvicorn
 import enum
 import sql
+from sqlalchemy import text
 
 logger = ignition.get_logger(__name__, logging.INFO, stdout=True)
 
@@ -105,9 +106,8 @@ def test(_args):
 
 def db(_args):
     def init(_db_args):
-        sql.database.engine.execute(sql.raw.pre_models)
         sql.models.Base.metadata.create_all(bind=sql.database.engine)
-        sql.database.engine.execute(sql.raw.post_models)
+        sql.database.engine.execute(text(sql.raw.init))
 
     def drop(_db_args):
         sql.models.Base.metadata.drop_all(bind=sql.database.engine)
