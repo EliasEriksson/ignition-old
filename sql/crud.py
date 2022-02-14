@@ -28,13 +28,19 @@ class Crud:
 
 class User(Crud):
     def get_by_id(self, id: uuid.UUID) -> Optional[models.User]:
-        return self.session.query(models.User).filter(models.User.id == id).first()
+        return user if (
+            user := self.session.query(models.User).filter(models.User.id == id).first()
+        ) else None
 
     def get_by_email(self, email: str) -> Optional[models.User]:
-        return self.session.query(models.User).filter(models.User.email == email).first()
+        return user if (
+            user := self.session.query(models.User).filter(models.User.email == email).first()
+        ) else None
 
     def get_by_token(self, token: str) -> Optional[models.User]:
-        return self.session.query(models.User).filter(models.User.token == token).first()
+        return user if (
+            user := self.session.query(models.User).filter(models.User.token == token).first()
+        ) else None
 
     def create(self, user: schemas.UserAuth) -> models.User:
         db_user = models.User(
@@ -44,7 +50,7 @@ class User(Crud):
             self.session.add(db_user)
             self.session.commit()
         except exc.IntegrityError:
-            raise errors.DuplicateEmail()
+            raise errors.DuplicateEmail(user.email)
         self.session.refresh(db_user)
         return db_user
 
@@ -57,7 +63,7 @@ class User(Crud):
             db_user.password_hash = hasher.hash(user.password)
             self.session.commit()
         except exc.IntegrityError:
-            raise errors.DuplicateEmail
+            raise errors.DuplicateEmail(user.email)
         return db_user
 
     def delete_by_id(self, id: uuid.UUID) -> Optional[models.User]:
@@ -71,13 +77,17 @@ class User(Crud):
 
 class Token(Crud):
     def get_by_id(self, id: int) -> Optional[models.Token]:
-        return token if (token := self.session.query(models.Token).filter(models.Snippet.id == id).first()) else None
+        return token if (
+            token := self.session.query(models.Token).filter(models.Snippet.id == id).first()
+        ) else None
 
     def get_by_header(self, authorization_header: str) -> Optional[models.Token]:
         return self.get_by_value(authorization_header.lstrip("Bearer:").strip())
 
     def get_by_value(self, value: str) -> Optional[models.Token]:
-        return token if (token := self.session.query(models.Token).filter(models.Token.value == value).first()) else None
+        return token if (
+            token := self.session.query(models.Token).filter(models.Token.value == value).first()
+        ) else None
 
     def create(self, user: models.User) -> None:
         if user.token:
@@ -112,7 +122,9 @@ class Token(Crud):
 
 class Snippet(Crud):
     def get_by_id(self, id: uuid.UUID) -> Optional[models.Snippet]:
-        return self.session.query(models.Snippet).filter(models.Snippet.id == id).first()
+        return snippet if (
+            snippet := self.session.query(models.Snippet).filter(models.Snippet.id == id).first()
+        ) else None
 
     def create(self, user: models.User, snippet: schemas.SnippetCreate) -> models.Snippet:
         db_snippet = models.Snippet(

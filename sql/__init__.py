@@ -4,4 +4,5 @@ from . import database
 from . import models
 from . import crud
 from . import raw
-__all__ = ["models", "database", "schemas", "crud", "raw"]
+from . import errors
+__all__ = ["models", "database", "schemas", "crud", "raw", "errors"]

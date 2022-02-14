@@ -3,13 +3,9 @@ import logging
 import uuid
 import ignition
 import fastapi
-from pydantic import BaseModel
 import sql
-from sqlalchemy.orm import Session
-
 
 loop = asyncio.get_event_loop()
-
 
 server = ignition.Server(10, ignition.get_logger(__name__, logging.INFO), loop=loop)
 root_url = "/ignition/api"
@@ -17,12 +13,6 @@ app = fastapi.FastAPI(
     docs_url=f"{root_url}/docs",
     openapi_url=f"{root_url}/openapi.json"
 )
-
-
-class Request(BaseModel):
-    language: str
-    code: str
-    args: str
 
 
 @app.get(f"{root_url}/snippets/{{id}}/")
@@ -99,7 +89,10 @@ async def create_user(
 ) -> sql.schemas.User:
     with sql.database.Session() as session:
         with sql.crud.User(session) as crud:
-            user = crud.create(data)
+            try:
+                user = crud.create(data)
+            except sql.errors.DuplicateEmail as e:
+                raise fastapi.HTTPException(400, detail=e.details)
         with sql.crud.Token(session) as crud:
             crud.create(user)
         return sql.schemas.User(
@@ -111,12 +104,12 @@ async def create_user(
 async def logout_user(
         token: sql.schemas.Token
 ):
-    with sql.database.Session() as session:  # type: Session
+    with sql.database.Session() as session:
         sql.crud.Token(session).delete_by_value(token.value)
     return fastapi.Response(status_code=204)
 
 
 @app.post(f"{root_url}/process/")
-async def process(request: Request):
+async def process(request: sql.schemas.SnippetBase):
     status, response = await server.process(request.dict())
     return {"status": status, "response": response}

@@ -1,3 +1,5 @@
+from pydantic.typing import Literal
+from ignition.common.languages import Languages
 from pydantic import BaseModel
 import uuid
 
@@ -33,9 +35,12 @@ class User(UserBase):
         orm_mode = True
 
 
+supported_languages = Literal[tuple(Languages.languages)]
+
+
 # snippets
 class SnippetBase(BaseModel):
-    language: str
+    language: Literal[supported_languages]
     code: str
     args: str
 
