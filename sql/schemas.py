@@ -9,11 +9,30 @@ import uuid
 supported_languages = Enum[tuple(Languages.languages)]
 
 
+# users
+class UserBase(BaseModel):
+    email: str
+
+
+class UserAuth(UserBase):
+    password: str
+
+
+class User(UserBase):
+    id: uuid.UUID
+    token: "Token"
+    quota: "Quota"
+    snippets: List["Snippet"]
+
+    class Config:
+        orm_mode = True
+
+
 # tokens
 class TokenBase(BaseModel):
     value: str
     expires: datetime.datetime
-    user: "User"
+    user: User
 
 
 class TokenCreate(TokenBase):
@@ -32,7 +51,7 @@ class QuotaBase(BaseModel):
     cap: int
     current: int
     next_refresh: datetime.datetime
-    user: "User"
+    user: User
 
 
 class Quota(QuotaBase):
@@ -55,26 +74,10 @@ class SnippetCreate(SnippetBase):
 
 class Snippet(SnippetBase):
     id: uuid.UUID
-    user: "User"
+    user: User
 
     class Config:
         orm_mode = True
 
 
-# users
-class UserBase(BaseModel):
-    email: str
-
-
-class UserAuth(UserBase):
-    password: str
-
-
-class User(UserBase):
-    id: uuid.UUID
-    token: Token
-    quota: Quota
-    snippets: List[Snippet]
-
-    class Config:
-        orm_mode = True
+User.update_forward_refs()

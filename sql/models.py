@@ -14,7 +14,7 @@ class User(Base):
 
     snippets = relationship("Snippet", back_populates="user")
     token = relationship("Token", back_populates="user", uselist=False)
-    quota = relationship("Quota", back_populate="user", uselist=False)
+    quota = relationship("Quota", back_populates="user", uselist=False)
 
 
 class Quota(Base):
@@ -26,7 +26,7 @@ class Quota(Base):
     current = Column(Integer, default=0, nullable=False)
     next_refresh = Column(TIMESTAMP(), server_default=text("now() + interval '1h'"))
 
-    user = relationship("User", back_populate="quota", uselist=False)
+    user = relationship("User", back_populates="quota", uselist=False)
 
 
 class Token(Base):
