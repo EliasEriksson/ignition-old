@@ -1,8 +1,10 @@
 from typing import *
 import uuid
+from sqlalchemy import exc
 from sqlalchemy.orm import Session
 from . import models
 from . import schemas
+from . import errors
 # noinspection PyPackageRequirements
 from argon2 import PasswordHasher
 
@@ -38,8 +40,11 @@ class User(Crud):
         db_user = models.User(
             email=user.email, password_hash=hasher.hash(user.password),
         )
-        self.session.add(db_user)
-        self.session.commit()
+        try:
+            self.session.add(db_user)
+            self.session.commit()
+        except exc.IntegrityError:
+            raise errors.DuplicateEmail()
         self.session.refresh(db_user)
         return db_user
 
@@ -47,10 +52,12 @@ class User(Crud):
         db_user = self.get_by_id(id)
         if not db_user or self.token != db_user.token:
             return
-
-        db_user.email = user.email
-        db_user.password_hash = hasher.hash(user.password)
-        self.session.commit()
+        try:
+            db_user.email = user.email
+            db_user.password_hash = hasher.hash(user.password)
+            self.session.commit()
+        except exc.IntegrityError:
+            raise errors.DuplicateEmail
         return db_user
 
     def delete_by_id(self, id: uuid.UUID) -> Optional[models.User]:
@@ -88,12 +95,16 @@ class Token(Crud):
 
     def delete_by_id(self, id: int) -> Optional[models.Token]:
         db_token = self.get_by_id(id)
+        if not db_token:
+            return
         self.session.delete(db_token)
         self.session.commit()
         return db_token
 
     def delete_by_value(self, value: str) -> Optional[models.Token]:
         db_token: models.Token = self.session.query(models.Token).filter(models.Token.value == value).first()
+        if not db_token:
+            return
         self.session.delete(db_token)
         self.session.commit()
         return db_token
@@ -108,8 +119,14 @@ class Snippet(Crud):
             **snippet.dict(),
             user=user
         )
-        self.session.add(db_snippet)
-        self.session.commit()
+        try:
+            self.session.add(db_snippet)
+            self.session.commit()
+        except exc.IntegrityError:
+            # the slim chance that there is a duplicate uuid
+            # retry once
+            self.session.add(db_snippet)
+            self.session.commit()
         self.session.refresh(db_snippet)
         return db_snippet
 
@@ -124,8 +141,10 @@ class Snippet(Crud):
         self.session.refresh(db_snippet)
         return db_snippet
 
-    def delete_by_id(self, id: uuid.UUID) -> schemas.Snippet:
+    def delete_by_id(self, id: uuid.UUID) -> Optional[schemas.Snippet]:
         db_snippet = self.get_by_id(id)
+        if not db_snippet:
+            return
         self.session.delete(db_snippet)
         self.session.commit()
         return db_snippet

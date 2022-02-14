@@ -161,4 +161,7 @@ if __name__ == '__main__':
         "test": lambda _args: test(_args),
         "db": lambda _args: db(_args)
     }
-    modes[(args := parser.parse_args()).mode](args)
+    try:
+        modes[(args := parser.parse_args()).mode](args)
+    except KeyError:
+        parser.print_help()
