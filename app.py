@@ -20,6 +20,8 @@ async def get_snippets(id: uuid.UUID):
     with sql.database.Session() as session:
         with sql.crud.Snippet(session) as crud:
             snippet = crud.get_by_id(id)
+        if not snippet:
+            raise fastapi.HTTPException(404)
         return snippet
 
 
@@ -33,6 +35,8 @@ async def create_snippets(
             token = crud.get_by_header(auth)
         with sql.crud.Snippet(session, token) as crud:
             snippet = crud.create(token.user, data)
+        if not snippet:
+            raise fastapi.HTTPException(404)
         return snippet
 
 
@@ -47,6 +51,8 @@ async def update_snippets(
             token = crud.get_by_header(auth)
         with sql.crud.Snippet(session, token) as crud:
             snippet = crud.update_by_id(id, data)
+        if not snippet:
+            raise fastapi.HTTPException(404)
         return snippet
 
 
@@ -60,6 +66,8 @@ async def delete_snippets(
             token = crud.get_by_header(auth)
         with sql.crud.Snippet(session, token) as crud:
             snippet = crud.delete_by_id(id)
+        if not snippet:
+            raise fastapi.HTTPException(404)
         return snippet
 
 
