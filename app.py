@@ -4,6 +4,7 @@ import uuid
 import ignition
 import fastapi
 import sql
+import datetime
 
 loop = asyncio.get_event_loop()
 
@@ -33,6 +34,9 @@ async def create_snippets(
     with sql.database.Session() as session:
         with sql.crud.Token(session) as crud:
             token = crud.get_by_header(auth)
+            if token.expires < datetime.datetime.now():
+                raise fastapi.HTTPException(401)
+            crud.update(token)
         with sql.crud.Snippet(session, token) as crud:
             snippet = crud.create(token.user, data)
         if not snippet:
@@ -49,6 +53,9 @@ async def update_snippets(
     with sql.database.Session() as session:
         with sql.crud.Token(session) as crud:
             token = crud.get_by_header(auth)
+            if token.expires < datetime.datetime.now():
+                raise fastapi.HTTPException(401)
+            crud.update(token)
         with sql.crud.Snippet(session, token) as crud:
             snippet = crud.update_by_id(id, data)
         if not snippet:
@@ -64,6 +71,9 @@ async def delete_snippets(
     with sql.database.Session() as session:
         with sql.crud.Token(session) as crud:
             token = crud.get_by_header(auth)
+            if token.expires < datetime.datetime.now():
+                raise fastapi.HTTPException(401)
+            crud.update(token)
         with sql.crud.Snippet(session, token) as crud:
             snippet = crud.delete_by_id(id)
         if not snippet:

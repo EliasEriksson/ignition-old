@@ -91,17 +91,16 @@ class Token(Crud):
 
     def create(self, user: models.User) -> None:
         if user.token:
-            return self.update(user)
+            return self.update(user.token)
         token = models.Token(user=user)
         self.session.add(token)
         self.session.commit()
         self.session.refresh(token)
 
-    def update(self, user: models.User) -> None:
-        if user.token:
-            self.session.execute("select update_expiration_of_row(:id);", {"id": user.token.id})
-            self.session.commit()
-            self.session.refresh(user.token)
+    def update(self, token: schemas.Token) -> None:
+        self.session.execute("select update_expiration_of_row(:id);", {"id": token.id})
+        self.session.commit()
+        self.session.refresh(token)
 
     def delete_by_id(self, id: int) -> Optional[models.Token]:
         db_token = self.get_by_id(id)

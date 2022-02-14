@@ -12,6 +12,7 @@ supported_languages = Enum[tuple(Languages.languages)]
 # tokens
 class TokenBase(BaseModel):
     value: str
+    expires: datetime.datetime
     user: "User"
 
 
@@ -20,17 +21,25 @@ class TokenCreate(TokenBase):
 
 
 class Token(TokenBase):
+    id: int
+
     class Config:
         orm_mode = True
 
 
 # quota
-class Quota(BaseModel):
-    id: int
+class QuotaBase(BaseModel):
     cap: int
     current: int
     next_refresh: datetime.datetime
     user: "User"
+
+
+class Quota(QuotaBase):
+    id: int
+
+    class Config:
+        orm_mode = True
 
 
 # snippets
