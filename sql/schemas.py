@@ -1,12 +1,18 @@
-from pydantic.typing import Literal
+from typing import *
+from pydantic.typing import Literal as Enum
 from ignition.common.languages import Languages
 from pydantic import BaseModel
+import datetime
 import uuid
+
+
+supported_languages = Enum[tuple(Languages.languages)]
 
 
 # tokens
 class TokenBase(BaseModel):
     value: str
+    user: "User"
 
 
 class TokenCreate(TokenBase):
@@ -14,6 +20,34 @@ class TokenCreate(TokenBase):
 
 
 class Token(TokenBase):
+    class Config:
+        orm_mode = True
+
+
+# quota
+class Quota(BaseModel):
+    id: int
+    cap: int
+    current: int
+    next_refresh: datetime.datetime
+    user: "User"
+
+
+# snippets
+class SnippetBase(BaseModel):
+    language: Enum[supported_languages]
+    code: str
+    args: str
+
+
+class SnippetCreate(SnippetBase):
+    pass
+
+
+class Snippet(SnippetBase):
+    id: uuid.UUID
+    user: "User"
+
     class Config:
         orm_mode = True
 
@@ -30,27 +64,8 @@ class UserAuth(UserBase):
 class User(UserBase):
     id: uuid.UUID
     token: Token
-
-    class Config:
-        orm_mode = True
-
-
-supported_languages = Literal[tuple(Languages.languages)]
-
-
-# snippets
-class SnippetBase(BaseModel):
-    language: Literal[supported_languages]
-    code: str
-    args: str
-
-
-class SnippetCreate(SnippetBase):
-    pass
-
-
-class Snippet(SnippetBase):
-    id: uuid.UUID
+    quota: Quota
+    snippets: List[Snippet]
 
     class Config:
         orm_mode = True
