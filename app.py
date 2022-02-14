@@ -6,6 +6,20 @@ import fastapi
 import sql
 import datetime
 
+
+# TODO
+""" 
+* integrate with fastapi auth.
+* implement logic for rate limit.
+* add proper error messages to all HTTPExceptions.
+* split endpoint across multiple files for structure.
+* add char limit to snippets.
+* add endpoint for supported languages.
+* implement password reset. (very low prio)
+* implement email verification. (very low prio)
+* implement mail change (very low prio)
+"""
+
 loop = asyncio.get_event_loop()
 
 server = ignition.Server(10, ignition.get_logger(__name__, logging.INFO), loop=loop)
