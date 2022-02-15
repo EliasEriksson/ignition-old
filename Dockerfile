@@ -47,6 +47,7 @@ RUN python -m pip install -r /ignition/requirements.txt
 
 COPY ignition /ignition/ignition
 COPY sql /ignition/sql
+COPY schemas /ignition/schemas
 COPY main.py /ignition/main.py
 
 CMD ["python", "main.py", "client"]

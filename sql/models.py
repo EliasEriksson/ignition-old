@@ -36,7 +36,7 @@ class Token(Base):
 
     # server default is altered to gen_token() in sql.raw
     # due to circular dependency
-    value = Column(String, unique=True, nullable=False, server_default=text("'temp'"))
+    access_token = Column(String, unique=True, nullable=False, server_default=text("'temp'"))
     expires = Column(TIMESTAMP(), server_default=text("now() + interval '1h'"))
 
     user = relationship("User", back_populates="token", uselist=False)

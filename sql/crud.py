@@ -7,6 +7,7 @@ import schemas
 from . import errors
 # noinspection PyPackageRequirements
 from argon2 import PasswordHasher
+from fastapi.security import OAuth2PasswordRequestForm
 
 
 hasher = PasswordHasher()
@@ -42,15 +43,15 @@ class User(Crud):
             user := self.session.query(models.User).filter(models.User.token == token).first()
         ) else None
 
-    def create(self, user: schemas.user.UserAuthData) -> models.User:
+    def create(self, user: OAuth2PasswordRequestForm) -> models.User:
         db_user = models.User(
-            email=user.email, password_hash=hasher.hash(user.password),
+            email=user.username, password_hash=hasher.hash(user.password),
         )
         try:
             self.session.add(db_user)
             self.session.commit()
         except exc.IntegrityError:
-            raise errors.DuplicateEmail(user.email)
+            raise errors.DuplicateEmail(user.username)
         self.session.refresh(db_user)
         return db_user
 
@@ -81,12 +82,9 @@ class Token(Crud):
             token := self.session.query(models.Token).filter(models.Snippet.id == id).first()
         ) else None
 
-    def get_by_header(self, authorization_header: str) -> Optional[models.Token]:
-        return self.get_by_value(authorization_header.lstrip("Bearer:").strip())
-
-    def get_by_value(self, value: str) -> Optional[models.Token]:
+    def get_by_access_token(self, access_token: str) -> Optional[models.Token]:
         return token if (
-            token := self.session.query(models.Token).filter(models.Token.value == value).first()
+            token := self.session.query(models.Token).filter(models.Token.access_token == access_token).first()
         ) else None
 
     def create(self, user: models.User) -> None:
@@ -110,8 +108,8 @@ class Token(Crud):
         self.session.commit()
         return db_token
 
-    def delete_by_value(self, value: str) -> Optional[models.Token]:
-        db_token: models.Token = self.session.query(models.Token).filter(models.Token.value == value).first()
+    def delete_by_value(self, access_token: str) -> Optional[models.Token]:
+        db_token: models.Token = self.session.query(models.Token).filter(models.Token.access_token == access_token).first()
         if not db_token:
             return
         self.session.delete(db_token)

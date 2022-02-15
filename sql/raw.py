@@ -18,7 +18,7 @@ init = (
     $$ language 'plpgsql';
     
     create trigger update_expirations
-        before update of value
+        before update of access_token
         on tokens
         for row
     execute procedure update_expiration();
@@ -33,6 +33,6 @@ init = (
     end;
     $$ language 'plpgsql';
     
-    alter table tokens alter column value set default gen_token();
+    alter table tokens alter column access_token set default gen_token();
     """
 )

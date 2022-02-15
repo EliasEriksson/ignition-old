@@ -3,7 +3,7 @@ import datetime
 
 
 class TokenBase(BaseModel):
-    value: str
+    access_token: str
     expires: datetime.datetime
 
 
@@ -19,5 +19,7 @@ class Token(TokenBase):
 
 
 class TokenResponse(TokenBase):
+    token_type = "bearer"
+
     class Config:
         orm_mode = True

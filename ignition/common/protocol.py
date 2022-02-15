@@ -33,4 +33,4 @@ class Response(TypedDict):
     """
     stdout: Optional[str]
     stderr: Optional[str]
-    ns: float
+    ns: int
