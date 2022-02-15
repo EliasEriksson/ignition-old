@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 from . import models
-from . import schemas
+import schemas
 from . import errors
 # noinspection PyPackageRequirements
 from argon2 import PasswordHasher
@@ -15,7 +15,7 @@ hasher = PasswordHasher()
 class Crud:
     session: Session
 
-    def __init__(self, session: Session, token: Optional[schemas.Token] = None) -> None:
+    def __init__(self, session: Session, token: Optional[schemas.token.Token] = None) -> None:
         self.session = session
         self.token = token
 
@@ -42,7 +42,7 @@ class User(Crud):
             user := self.session.query(models.User).filter(models.User.token == token).first()
         ) else None
 
-    def create(self, user: schemas.UserAuth) -> models.User:
+    def create(self, user: schemas.user.UserAuthData) -> models.User:
         db_user = models.User(
             email=user.email, password_hash=hasher.hash(user.password),
         )
@@ -54,7 +54,7 @@ class User(Crud):
         self.session.refresh(db_user)
         return db_user
 
-    def update_by_id(self, id: uuid.UUID, user: schemas.UserAuth) -> Optional[models.User]:
+    def update_by_id(self, id: uuid.UUID, user: schemas.user.UserAuthData) -> Optional[models.User]:
         db_user = self.get_by_id(id)
         if not db_user or self.token != db_user.token:
             return
@@ -97,7 +97,7 @@ class Token(Crud):
         self.session.commit()
         self.session.refresh(token)
 
-    def update(self, token: schemas.Token) -> None:
+    def update(self, token: schemas.token.Token) -> None:
         self.session.execute("select update_expiration_of_row(:id);", {"id": token.id})
         self.session.commit()
         self.session.refresh(token)
@@ -119,13 +119,39 @@ class Token(Crud):
         return db_token
 
 
+class Quota(Crud):
+    def get_by_id(self, id: int) -> Optional[models.Quota]:
+        return quota if (
+            quota := self.session.query(models.Quota).filter(models.Quota.id == id).first()
+        ) else None
+
+    def create(self, user: models.User) -> None:
+        if user.quota:
+            return
+        quota = models.Quota(user=user)
+        self.session.add(quota)
+        self.session.commit()
+        self.session.refresh(quota)
+
+    def update(self, quota: models.Quota) -> None:
+        pass
+
+    def delete_by_id(self, id: int) -> Optional[models.Quota]:
+        db_quota: models.Quota = self.session.query(models.Quota).filter(models.Quota.id == id).first()
+        if not db_quota:
+            return
+        self.session.delete(db_quota)
+        self.session.commit()
+        return db_quota
+
+
 class Snippet(Crud):
     def get_by_id(self, id: uuid.UUID) -> Optional[models.Snippet]:
         return snippet if (
             snippet := self.session.query(models.Snippet).filter(models.Snippet.id == id).first()
         ) else None
 
-    def create(self, user: models.User, snippet: schemas.SnippetCreate) -> models.Snippet:
+    def create(self, user: models.User, snippet: schemas.snippet.SnippetData) -> models.Snippet:
         db_snippet = models.Snippet(
             **snippet.dict(),
             user=user
@@ -141,7 +167,7 @@ class Snippet(Crud):
         self.session.refresh(db_snippet)
         return db_snippet
 
-    def update_by_id(self, id: uuid.UUID, snippet: schemas.SnippetCreate) -> Optional[models.Snippet]:
+    def update_by_id(self, id: uuid.UUID, snippet: schemas.snippet.SnippetData) -> Optional[models.Snippet]:
         db_snippet: models.Snippet = self.get_by_id(id)
         if not db_snippet or self.token != db_snippet.user.token:
             return
@@ -152,7 +178,7 @@ class Snippet(Crud):
         self.session.refresh(db_snippet)
         return db_snippet
 
-    def delete_by_id(self, id: uuid.UUID) -> Optional[schemas.Snippet]:
+    def delete_by_id(self, id: uuid.UUID) -> Optional[models.Snippet]:
         db_snippet = self.get_by_id(id)
         if not db_snippet:
             return
