@@ -1,8 +1,6 @@
 import fastapi
-import schemas
 import routers
 from starlette.responses import RedirectResponse
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 # TODO
 """ 
