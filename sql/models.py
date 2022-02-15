@@ -9,7 +9,7 @@ class User(Base):
     __tablename__ = "users"
     id = Column(UUID(as_uuid=True), server_default=text(f"gen_random_uuid()"), primary_key=True)
 
-    email = Column(String, unique=True, nullable=False)
+    email = Column(String(255), unique=True, nullable=False)
     password_hash = Column(String, nullable=False)
 
     snippets = relationship("Snippet", back_populates="user")
@@ -47,8 +47,8 @@ class Snippet(Base):
     id = Column(UUID(as_uuid=True), server_default=text("gen_random_uuid()"), primary_key=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
 
-    language = Column(String, nullable=False)
-    code = Column(String, nullable=False)
-    args = Column(String, nullable=False)
+    language = Column(String(32), nullable=False)
+    code = Column(String(10_000), nullable=False)
+    args = Column(String(1_000), nullable=False)
 
     user = relationship("User", back_populates="snippets")

@@ -5,16 +5,17 @@ import ignition
 import fastapi
 import sql
 import datetime
+from starlette.responses import RedirectResponse
 
 
 # TODO
 """ 
-* integrate with fastapi auth.
 * implement logic for rate limit.
+* add endpoint for supported languages.
+* integrate with fastapi auth.
 * add proper error messages to all HTTPExceptions.
 * split endpoint across multiple files for structure.
-* add char limit to snippets.
-* add endpoint for supported languages.
+* change token value function to query something else.
 * implement password reset. (very low prio)
 * implement email verification. (very low prio)
 * implement mail change (very low prio)
@@ -28,6 +29,11 @@ app = fastapi.FastAPI(
     docs_url=f"{root_url}/docs",
     openapi_url=f"{root_url}/openapi.json"
 )
+
+
+@app.get(f"/", include_in_schema=False)
+async def docs_redirect():
+    return RedirectResponse(f"{root_url}/docs")
 
 
 @app.get(f"{root_url}/snippets/{{id}}/")

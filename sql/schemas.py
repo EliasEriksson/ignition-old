@@ -1,9 +1,10 @@
 from typing import *
 from pydantic.typing import Literal as Enum
+from pydantic import BaseModel, constr
 from ignition.common.languages import Languages
-from pydantic import BaseModel
 import datetime
 import uuid
+from . import models
 
 
 supported_languages = Enum[tuple(Languages.languages)]
@@ -11,11 +12,12 @@ supported_languages = Enum[tuple(Languages.languages)]
 
 # users
 class UserBase(BaseModel):
-    email: str
+    # noinspection PyUnresolvedReferences
+    email: constr(max_length=models.User.email.property.columns[0].type.length)
 
 
 class UserAuth(UserBase):
-    password: str
+    password: constr(max_length=255)
 
 
 class User(UserBase):
@@ -64,8 +66,12 @@ class Quota(QuotaBase):
 # snippets
 class SnippetBase(BaseModel):
     language: Enum[supported_languages]
-    code: str
-    args: str
+    # property not detected by pycharm inspection
+    # noinspection PyUnresolvedReferences
+    code: constr(max_length=models.Snippet.code.property.columns[0].type.length)
+    # property no detected by pycharm inspection
+    # noinspection PyUnresolvedReferences
+    args: constr(max_length=models.Snippet.args.property.columns[0].type.length)
 
 
 class SnippetCreate(SnippetBase):

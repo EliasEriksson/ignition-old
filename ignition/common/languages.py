@@ -94,6 +94,15 @@ class Languages(metaclass=LanguageMeta):
     """
 
     @staticmethod
+    async def python(file: Path, sys_args: str) -> Response:
+        """
+        procedure for python
+        """
+        return await shell([
+            f"python3 {file} {sys_args}"
+        ])
+
+    @staticmethod
     async def php(file: Path, sys_args: str) -> Response:
         """
         procedure for php
@@ -147,15 +156,6 @@ class Languages(metaclass=LanguageMeta):
         return await shell([
             f"mv {file} {(project := Path('/cs')).joinpath('Program.cs')}",  # move to prepared console project
             f"dotnet run --project {project} {sys_args}"
-        ])
-
-    @staticmethod
-    async def python(file: Path, sys_args: str) -> Response:
-        """
-        procedure for python
-        """
-        return await shell([
-            f"python3 {file} {sys_args}"
         ])
 
     @staticmethod
