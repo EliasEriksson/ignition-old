@@ -3,7 +3,7 @@ import sql
 import fastapi
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 
-router = fastapi.APIRouter()
+router = fastapi.APIRouter(tags=["Auth"])
 
 
 oath = OAuth2PasswordBearer("token/")

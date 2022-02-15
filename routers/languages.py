@@ -2,7 +2,9 @@ from typing import *
 import fastapi
 import schemas
 from ignition.common.languages import Languages
-router = fastapi.APIRouter()
+
+
+router = fastapi.APIRouter(tags=["Snippets"])
 
 
 @router.get(

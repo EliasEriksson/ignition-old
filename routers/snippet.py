@@ -12,7 +12,7 @@ import ignition
 loop = asyncio.get_event_loop()
 server = ignition.Server(10, ignition.get_logger(__name__, logging.INFO), loop=loop)
 
-router = fastapi.APIRouter()
+router = fastapi.APIRouter(tags=["Snippets"])
 oath = OAuth2PasswordBearer("token/")
 
 
