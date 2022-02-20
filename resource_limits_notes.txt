@@ -1,0 +1,6 @@
+cpu_quota	100_000 / availeble containers
+memory		128m
+storage_opt	size=4G
+docker network create --internal no-internet
+network		no-internet
+
